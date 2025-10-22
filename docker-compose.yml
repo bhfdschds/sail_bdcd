@@ -1,0 +1,44 @@
+version: '3'
+services:
+  db:
+    image: ibmcom/db2
+    privileged: true
+    restart: always
+    ports:
+      - "50000:50000"
+    environment:
+      LICENSE: accept
+      DB2INST1_PASSWORD: ${DB2INST1_PASSWORD}
+      DBNAME: ${DBNAME}
+      DB2COMM: TCPIP
+    volumes:
+      - db2-data:/database
+      - ./init-scripts:/var/custom:z
+    
+    networks:
+      - db2-network
+
+  rstudio:
+    build:
+      context: .
+      dockerfile: Dockerfile.rstudio
+    ports:
+      - "8787:8787"
+    environment:
+      - PASSWORD=${RSTUDIO_PASSWORD}
+      - ROOT=TRUE
+    volumes:
+      - ./r-scripts:/home/rstudio/scripts
+      - rstudio-home:/home/rstudio
+    depends_on:
+      - db
+    networks:
+      - db2-network
+
+volumes:
+  db2-data:
+  rstudio-home:
+
+networks:
+  db2-network:
+    driver: bridge
