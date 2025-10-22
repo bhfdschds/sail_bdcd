@@ -30,7 +30,7 @@ RUN echo "[DB2]" > /etc/odbcinst.ini && \
     echo "DontDLClose = 1" >> /etc/odbcinst.ini
 
 # Install R packages
-RUN R -e "install.packages(c('DBI', 'odbc', 'dplyr', 'dbplyr'), repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages(c('DBI', 'odbc', 'dplyr', 'dbplyr', 'tidyverse'), repos='http://cran.rstudio.com/')"
 
 # Create scripts directory
 RUN mkdir -p /home/rstudio/scripts && \
