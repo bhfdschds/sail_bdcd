@@ -1,3 +1,20 @@
+library(odbc)
+library(DBI)
+library(dplyr)
+library(lubridate)
+library(purrr)
+
+# Connect using the container's network hostname
+con <- dbConnect(
+  odbc::odbc(),
+  Driver = "DB2",
+  Database = "DEVDB",
+  Hostname = "db",  # This is the docker-compose service name
+  Port = 50000,
+  UID = "db2inst1",
+  PWD = "mypassword123",
+  Protocol = "TCPIP"
+)
 
 # Create schema sail if not exists
 dbExecute(conn, "CREATE SCHEMA sail")
