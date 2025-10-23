@@ -13,7 +13,7 @@ The test suite uses the `testthat` framework and covers:
 ## Test Structure
 
 ```
-tests/
+r-scripts/tests/
 ├── testthat.R                              # Main test runner
 ├── testthat/
 │   ├── helper-setup.R                      # Test helpers and setup
@@ -84,13 +84,13 @@ From the project root directory:
 ```r
 # In R console
 library(testthat)
-test_dir("tests/testthat")
+test_dir("r-scripts/tests/testthat")
 ```
 
 Or from command line:
 
 ```bash
-Rscript tests/testthat.R
+Rscript r-scripts/tests/testthat.R
 ```
 
 ### Run Specific Test Files
@@ -99,14 +99,14 @@ Rscript tests/testthat.R
 library(testthat)
 
 # Database connection tests only
-test_file("tests/testthat/test-database-connection.R")
+test_file("r-scripts/tests/testthat/test-database-connection.R")
 
 # Table existence tests only
-test_file("tests/testthat/test-table-existence.R")
+test_file("r-scripts/tests/testthat/test-table-existence.R")
 
 # Function tests only
-test_file("tests/testthat/test-create-long-format-assets.R")
-test_file("tests/testthat/test-read-db2-config-multi-source.R")
+test_file("r-scripts/tests/testthat/test-create-long-format-assets.R")
+test_file("r-scripts/tests/testthat/test-read-db2-config-multi-source.R")
 ```
 
 ### Run Tests Without Database
@@ -118,7 +118,7 @@ To run only unit tests (no database required):
 ```r
 # Unit tests that don't require database will still run
 # Integration tests will be skipped automatically
-test_dir("tests/testthat")
+test_dir("r-scripts/tests/testthat")
 ```
 
 Tests that require database access use `skip_if_no_db2()` and will show as "skipped" in the output.
@@ -141,7 +141,7 @@ Tests the `db2_connection.R` functions:
 
 **Example**:
 ```r
-test_file("tests/testthat/test-database-connection.R")
+test_file("r-scripts/tests/testthat/test-database-connection.R")
 ```
 
 ### 2. Table Existence Tests
@@ -158,7 +158,7 @@ Verifies database schema and table structure:
 
 **Example**:
 ```r
-test_file("tests/testthat/test-table-existence.R")
+test_file("r-scripts/tests/testthat/test-table-existence.R")
 ```
 
 ### 3. Core Function Tests
@@ -182,7 +182,7 @@ Tests functions from `create_long_format_assets.R`:
 
 **Example**:
 ```r
-test_file("tests/testthat/test-create-long-format-assets.R")
+test_file("r-scripts/tests/testthat/test-create-long-format-assets.R")
 ```
 
 ### 4. Multi-Source Config Tests
@@ -210,7 +210,7 @@ Tests functions from `read_db2_config_multi_source.R`:
 
 **Example**:
 ```r
-test_file("tests/testthat/test-read-db2-config-multi-source.R")
+test_file("r-scripts/tests/testthat/test-read-db2-config-multi-source.R")
 ```
 
 ## Understanding Test Output
@@ -428,7 +428,7 @@ jobs:
           DB_PASSWORD: mypassword123
         run: |
           library(testthat)
-          test_dir("tests/testthat")
+          test_dir("r-scripts/tests/testthat")
         shell: Rscript {0}
 ```
 
