@@ -8,9 +8,9 @@ A comprehensive test suite has been created for the SAIL BDCD R pipeline using t
 
 ### 1. Core Test Infrastructure
 
-- **`tests/testthat.R`** - Main test runner entry point
-- **`tests/testthat/helper-setup.R`** - Test helpers, utilities, and setup functions
-- **`tests/README.md`** - Comprehensive documentation on running and writing tests
+- **`r-scripts/tests/testthat.R`** - Main test runner entry point
+- **`r-scripts/tests/testthat/helper-setup.R`** - Test helpers, utilities, and setup functions
+- **`r-scripts/tests/README.md`** - Comprehensive documentation on running and writing tests
 
 ### 2. Test Files
 
@@ -107,10 +107,10 @@ Once R and required packages are installed:
 ```r
 # Run all tests
 library(testthat)
-test_dir("tests/testthat")
+test_dir("r-scripts/tests/testthat")
 
 # Run specific test file
-test_file("tests/testthat/test-database-connection.R")
+test_file("r-scripts/tests/testthat/test-database-connection.R")
 ```
 
 ## Testing Strategy
@@ -171,7 +171,7 @@ install.packages(c(
 1. Install R and required packages
 2. Ensure DB2 is running and accessible
 3. Set environment variables for database credentials
-4. Run tests: `Rscript tests/testthat.R`
+4. Run tests: `Rscript r-scripts/tests/testthat.R`
 5. Review test output and fix any failures
 6. Add tests for new functions as development continues
 
