@@ -4,4 +4,4 @@
 library(testthat)
 
 # Run all tests in the testthat directory
-test_dir("testthat")
+test_dir("tests/testthat")

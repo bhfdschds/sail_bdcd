@@ -10,7 +10,6 @@ database:
     driver: "DB2"
     uid: "${DB_USER}"
     pwd: "${DB_PASSWORD}"
-#    security: "SSL"
 
 # Asset Definitions
 # Each asset can have multiple source tables
