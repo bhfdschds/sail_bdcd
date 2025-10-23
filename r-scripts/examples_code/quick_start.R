@@ -9,7 +9,7 @@ library(dplyr)
 library(glue)
 
 # Source the main functions
-
+source("../utility_code/db2_connection.R")                 # Database connection
 source("../pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
 source("../pipeline_code/create_long_format_assets.R")     # Main long format functions
 
@@ -17,26 +17,15 @@ source("../pipeline_code/create_long_format_assets.R")     # Main long format fu
 # SETUP
 # ============================================================================
 
-# Set your database credentials
+# Set your database credentials (optional - will use defaults if not set)
 # Sys.setenv(DB_USER = "db2inst1")
 # Sys.setenv(DB_PASSWORD = "mypassword123")
 
 # Load configuration
 config <- read_db_config("../pipeline_code/db2_config_multi_source.yaml")
 
-# Connect to database
-#conn <- create_db2_connection(config)
-
-conn <- dbConnect(
-  odbc::odbc(),
-  Driver = "DB2",
-  Database = "DEVDB",
-  Hostname = "db",  # This is the docker-compose service name
-  Port = 50000,
-  UID = "db2inst1",
-  PWD = "mypassword123",
-  Protocol = "TCPIP"
-)
+# Connect to database using the standardized function
+conn <- create_db2_connection(config)
 
 # ============================================================================
 # OPTION 1: Create Single Asset Long Format Table

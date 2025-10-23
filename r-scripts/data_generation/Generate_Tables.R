@@ -4,26 +4,20 @@ library(dplyr)
 library(lubridate)
 library(purrr)
 
-# Connect using the container's network hostname
-con <- dbConnect(
-  odbc::odbc(),
-  Driver = "DB2",
-  Database = "DEVDB",
-  Hostname = "db",  # This is the docker-compose service name
-  Port = 50000,
-  UID = "db2inst1",
-  PWD = "mypassword123",
-  Protocol = "TCPIP"
-)
+# Source the database connection function
+source("../utility_code/db2_connection.R")
+
+# Connect using the standardized connection function
+con <- create_db2_connection()
 
 # Create schema sail if not exists
-dbExecute(conn, "CREATE SCHEMA sail")
+dbExecute(con, "CREATE SCHEMA sail")
 
 # Set current schema to sail
-dbExecute(conn, "SET SCHEMA sail")
+dbExecute(con, "SET SCHEMA sail")
 
 # Create tables - note closing statements and corrected typos (e.g., NOT NULL)
-dbExecute(conn, "
+dbExecute(con, "
 CREATE TABLE sail.GP_EVENT_REFORMATTED (
     ALF_E BIGINT NOT NULL,
     ALF_STS_CD CHAR(10) NOT NULL,
@@ -114,4 +108,4 @@ CREATE TABLE sail.WLGP_CLEANED_GP_REG_MEDIAN (
 # dbExecute(con, "GRANT ALL ON TABLE sail.GP_EVENT_CODES TO PUBLIC")
 
 # Close connection
-dbDisconnect(conn)
+dbDisconnect(con)
