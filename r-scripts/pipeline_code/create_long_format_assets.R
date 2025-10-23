@@ -9,36 +9,15 @@ library(glue)
 library(tidyr)
 
 # ============================================================================
-# 1. Configuration and Connection
+# 1. Configuration
+# ============================================================================
+# Note: For database connections, use create_db2_connection()
+# from utility_code/db2_connection.R
 # ============================================================================
 
 read_db_config <- function(config_path = "db2_config_multi_source.yaml") {
   config <- yaml::read_yaml(config_path)
   return(config)
-}
-
-create_db2_connection <- function(config) {
-  # Get credentials from environment variables
-  db_user <- Sys.getenv("DB_USER")
-  db_password <- Sys.getenv("DB_PASSWORD")
-  
-  if (db_user == "" || db_password == "") {
-    stop("Database credentials not found. Set DB_USER and DB_PASSWORD environment variables.")
-  }
-  
-  # Use config settings with Docker-compatible parameter names
-  conn <- DBI::dbConnect(
-    odbc::odbc(),
-    Driver = config$database$driver,           # "DB2"
-    Database = config$database$database_name,  # "DEVDB"
-    Hostname = config$database$hostname,       # "db"
-    Port = config$database$port,               # 50000
-    UID = db_user,
-    PWD = db_password,
-    Protocol = config$database$protocol        # "TCPIP"
-  )
-  
-  return(conn)
 }
 
 # ============================================================================

@@ -4,19 +4,12 @@ library(dplyr)
 library(lubridate)
 library(purrr)
 
-# Connect using the container's network hostname
-con <- dbConnect(
-  odbc::odbc(),
-  Driver = "DB2",
-  Database = "DEVDB",
-  Hostname = "db",  # This is the docker-compose service name
-  Port = 50000,
-  UID = "db2inst1",
-  PWD = "mypassword123",
-  Protocol = "TCPIP"
-)
+# Source the database connection function
+# NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
+source("./utility_code/db2_connection.R")
 
-print("Connected to DB2!")
+# Connect using the standardized connection function
+con <- create_db2_connection()
 
 set.seed(42)
 N_PATIENTS <- 10000

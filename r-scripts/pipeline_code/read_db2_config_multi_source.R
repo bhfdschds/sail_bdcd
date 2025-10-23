@@ -18,20 +18,10 @@ read_db_config <- function(config_path = "db2_config_multi_source.yaml") {
 }
 
 # ============================================================================
-# 2. Database Connection
+# 2. Source Table Selection Functions
 # ============================================================================
-conn <- dbConnect(
-  odbc::odbc(),
-  Driver = "DB2",
-  Database = "DEVDB",
-  Hostname = "db",  # This is the docker-compose service name
-  Port = 50000,
-  UID = "db2inst1",
-  PWD = "mypassword123",
-  Protocol = "TCPIP"
-)
-# ============================================================================
-# 3. Source Table Selection Functions
+# Note: Database connections should be created using create_db2_connection()
+# from utility_code/db2_connection.R and passed to functions as parameters
 # ============================================================================
 
 get_asset_sources <- function(config, asset_name) {
