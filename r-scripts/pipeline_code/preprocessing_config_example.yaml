@@ -1,0 +1,322 @@
+# Example Configuration for Data Preprocessing Pipeline
+# This file demonstrates how to configure preprocessing steps for different datasets
+
+# Preprocessing configurations by dataset
+preprocessing:
+
+  # Example 1: Cholesterol Data - Code matching and value validation
+  cholesterol_data:
+
+    # Step 1: Match cholesterol test codes
+    match_cholesterol_codes:
+      type: "code_match"
+      code_column: "test_code"              # Column in data containing codes
+      lookup_source: "CHOLESTEROL_CODES"     # Lookup table name
+      source_type: "database"                # Options: database, csv, inline
+      schema: "SAIL"
+      match_column: "code"                   # Column in lookup table to match against
+      output_columns:                        # Columns to bring from lookup table
+        - "test_name"
+        - "test_category"
+        - "units"
+      join_type: "inner"                     # Only keep matched records
+
+    # Step 2: Extract and validate cholesterol values
+    validate_cholesterol_values:
+      type: "value_validation"
+      column: "result_value"
+      min_value: 1.0                         # mmol/L
+      max_value: 15.0                        # mmol/L
+      action: "flag"                         # Options: flag, filter, transform
+      flag_column: "cholesterol_valid"
+
+    # Step 3: Convert result date to proper date type
+    convert_dates:
+      type: "data_transformation"
+      transform_type: "date_conversion"
+      column: "result_date"
+      date_format: "%Y-%m-%d"
+
+
+  # Example 2: Disease Diagnosis Data - Multiple disease lookups
+  diagnosis_data:
+
+    # Step 1: Flag heart disease diagnoses
+    flag_heart_disease:
+      type: "covariate_flag"
+      covariate_name: "heart_disease"
+      code_column: "diagnosis_code"
+      event_date_column: "diagnosis_date"
+      flag_column: "has_heart_disease"
+
+      # Option A: Provide codes directly
+      event_codes:
+        - "I21"    # Acute MI
+        - "I21.0"
+        - "I21.1"
+        - "I21.2"
+        - "I21.3"
+        - "I21.4"
+        - "I21.9"
+        - "I22"    # Subsequent MI
+        - "I25"    # Chronic ischemic heart disease
+        - "I25.1"
+        - "I25.2"
+
+      aggregate_to_patient: true             # Create patient-level flags
+
+    # Step 2: Flag cancer diagnoses using lookup table
+    flag_cancer:
+      type: "covariate_flag"
+      covariate_name: "cancer"
+      code_column: "diagnosis_code"
+      event_date_column: "diagnosis_date"
+      flag_column: "has_cancer"
+
+      # Option B: Load codes from database lookup table
+      code_lookup_table: "CANCER_ICD10_CODES"
+      schema: "SAIL"
+      code_filter: "active = 1"              # Optional WHERE clause
+
+      aggregate_to_patient: true
+
+    # Step 3: Flag diabetes using CSV file
+    flag_diabetes:
+      type: "covariate_flag"
+      covariate_name: "diabetes"
+      code_column: "diagnosis_code"
+      event_date_column: "diagnosis_date"
+      flag_column: "has_diabetes"
+
+      # Option C: Load codes from CSV file
+      code_file: "/mnt/user-data/lookups/diabetes_codes.csv"
+
+      aggregate_to_patient: true
+
+
+  # Example 3: Hospital Admission Data - Outcome flagging
+  hospital_admission_data:
+
+    # Step 1: Flag stroke outcomes (after baseline)
+    flag_stroke_outcome:
+      type: "outcome_flag"
+      outcome_name: "stroke"
+      code_column: "diagnosis_code"
+      event_date_column: "admission_date"
+      flag_column: "has_stroke_outcome"
+      date_column: "stroke_date"             # Column for first stroke date
+
+      event_codes:
+        - "I60"    # Subarachnoid haemorrhage
+        - "I61"    # Intracerebral haemorrhage
+        - "I63"    # Cerebral infarction
+        - "I64"    # Stroke, not specified
+
+      aggregate_to_patient: true
+      include_date: true                     # Include date of first outcome
+
+    # Step 2: Validate admission dates
+    validate_admission_dates:
+      type: "value_validation"
+      column: "admission_date"
+      min_value: "2000-01-01"
+      max_value: "2024-12-31"
+      action: "flag"
+      flag_column: "valid_admission_date"
+
+
+  # Example 4: Lab Results - Multiple validation steps
+  lab_results_data:
+
+    # Step 1: Match lab test codes
+    match_lab_codes:
+      type: "code_match"
+      code_column: "lab_test_code"
+      lookup_source: "LAB_TEST_CODES"
+      source_type: "database"
+      match_column: "test_code"
+      output_columns:
+        - "test_name"
+        - "normal_range_min"
+        - "normal_range_max"
+        - "units"
+      join_type: "left"
+
+    # Step 2: Clean test result values
+    clean_result_values:
+      type: "data_transformation"
+      transform_type: "numeric_conversion"
+      column: "test_result"
+
+    # Step 3: Flag abnormal results
+    flag_abnormal_results:
+      type: "value_validation"
+      column: "test_result"
+      # Note: This would ideally use the normal_range_min/max from lookup
+      # For now, showing static validation
+      min_value: 0
+      max_value: 1000
+      action: "flag"
+      flag_column: "within_possible_range"
+
+
+  # Example 5: Blood Pressure Data - Complex validation
+  blood_pressure_data:
+
+    # Step 1: Match BP measurement codes
+    match_bp_codes:
+      type: "code_match"
+      code_column: "measurement_code"
+      lookup_source: "BP_CODES"
+      source_type: "database"
+      match_column: "code"
+      output_columns:
+        - "measurement_type"    # systolic, diastolic, etc.
+      join_type: "inner"
+
+    # Step 2: Validate systolic BP
+    validate_systolic:
+      type: "value_validation"
+      column: "systolic_value"
+      min_value: 70
+      max_value: 250
+      action: "flag"
+      flag_column: "systolic_valid"
+
+    # Step 3: Validate diastolic BP
+    validate_diastolic:
+      type: "value_validation"
+      column: "diastolic_value"
+      min_value: 40
+      max_value: 150
+      action: "flag"
+      flag_column: "diastolic_valid"
+
+
+  # Example 6: Prescription Data - Medication matching
+  prescription_data:
+
+    # Step 1: Match medication codes to drug names
+    match_medication_codes:
+      type: "code_match"
+      code_column: "bnf_code"
+      lookup_source: "BNF_CODES"
+      source_type: "database"
+      schema: "SAIL"
+      match_column: "bnf_code"
+      output_columns:
+        - "drug_name"
+        - "drug_class"
+        - "atc_code"
+      join_type: "left"
+
+    # Step 2: Flag statin prescriptions as covariate
+    flag_statin_use:
+      type: "covariate_flag"
+      covariate_name: "statin_use"
+      code_column: "bnf_code"
+      event_date_column: "prescription_date"
+      flag_column: "has_statin_prescription"
+
+      # BNF codes for statins (2.12 - Lipid-regulating drugs)
+      event_codes:
+        - "0212000AA"    # Atorvastatin
+        - "0212000B0"    # Simvastatin
+        - "0212000C0"    # Pravastatin
+        - "0212000M0"    # Rosuvastatin
+
+      aggregate_to_patient: true
+
+
+# Cohort configuration - defines baseline dates for covariate/outcome flagging
+cohort:
+
+  # Option 1: Fixed baseline date for all patients
+  baseline_strategy: "fixed"
+  fixed_date: "2020-01-01"
+
+  # Option 2: Load baseline dates from database table
+  # baseline_strategy: "database"
+  # baseline_table: "STUDY_COHORT"
+  # baseline_schema: "SAIL"
+  # patient_id_column: "patient_id"
+  # baseline_date_column: "index_date"
+
+  # Option 3: Calculate baseline from event (e.g., first diagnosis)
+  # baseline_strategy: "event"
+  # event_dataset: "diagnosis_data"
+  # event_date_column: "first_diagnosis_date"
+
+
+# Dataset preprocessing mapping - which preprocessing to apply to which datasets
+dataset_preprocessing_map:
+
+  # Map table names to their preprocessing configs
+  GP_CHOLESTEROL_TESTS:
+    preprocessing: "cholesterol_data"
+    enabled: true
+
+  HOSPITAL_DIAGNOSES:
+    preprocessing: "diagnosis_data"
+    enabled: true
+
+  HOSPITAL_ADMISSIONS:
+    preprocessing: "hospital_admission_data"
+    enabled: true
+
+  LAB_RESULTS:
+    preprocessing: "lab_results_data"
+    enabled: true
+
+  PRIMARY_CARE_BP:
+    preprocessing: "blood_pressure_data"
+    enabled: true
+
+  GP_PRESCRIPTIONS:
+    preprocessing: "prescription_data"
+    enabled: true
+
+
+# Lookup tables configuration
+lookup_tables:
+
+  CHOLESTEROL_CODES:
+    table_name: "REFERENCE_CHOLESTEROL_TESTS"
+    schema: "SAIL"
+    description: "Cholesterol test code lookup"
+
+  CANCER_ICD10_CODES:
+    table_name: "REFERENCE_ICD10_CANCER"
+    schema: "SAIL"
+    description: "ICD-10 codes for cancer diagnoses"
+
+  LAB_TEST_CODES:
+    table_name: "REFERENCE_LAB_TESTS"
+    schema: "SAIL"
+    description: "Laboratory test code reference"
+
+  BP_CODES:
+    table_name: "REFERENCE_BP_MEASUREMENTS"
+    schema: "SAIL"
+    description: "Blood pressure measurement codes"
+
+  BNF_CODES:
+    table_name: "REFERENCE_BNF"
+    schema: "SAIL"
+    description: "British National Formulary drug codes"
+
+
+# Global preprocessing settings
+settings:
+
+  # Whether to continue processing if a step fails
+  continue_on_error: true
+
+  # Whether to add metadata columns tracking preprocessing
+  add_preprocessing_metadata: true
+
+  # Log level for preprocessing messages
+  log_level: "INFO"    # DEBUG, INFO, WARN, ERROR
+
+  # Whether to validate data after preprocessing
+  validate_after_processing: true
