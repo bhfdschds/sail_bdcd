@@ -11,8 +11,47 @@ library(tidyr)
 library(testthat)
 
 # Set paths relative to test directory
-# When tests run, working directory is typically the package root
-PROJECT_ROOT <- here::here()
+# Tests are now located at r-scripts/tests/testthat/
+# Find project root by searching for r-scripts directory
+
+find_project_root <- function() {
+  # Start from current working directory
+  current <- getwd()
+
+  # Check if r-scripts exists in current directory
+  if (dir.exists(file.path(current, "r-scripts"))) {
+    return(current)
+  }
+
+  # Check if we're inside r-scripts (tests are at r-scripts/tests/testthat)
+  # If so, go up to parent directory
+  if (basename(current) == "testthat" &&
+      dir.exists(file.path(current, "..", "..", ".."))) {
+    potential_root <- normalizePath(file.path(current, "..", "..", ".."))
+    if (dir.exists(file.path(potential_root, "r-scripts"))) {
+      return(potential_root)
+    }
+  }
+
+  # Try here::here() as fallback
+  root <- here::here()
+  if (dir.exists(file.path(root, "r-scripts"))) {
+    return(root)
+  }
+
+  # Last resort: search upwards from current directory
+  search_dir <- current
+  for (i in 1:5) {  # Search up to 5 levels
+    if (dir.exists(file.path(search_dir, "r-scripts"))) {
+      return(normalizePath(search_dir))
+    }
+    search_dir <- file.path(search_dir, "..")
+  }
+
+  stop("Could not find project root with r-scripts directory")
+}
+
+PROJECT_ROOT <- find_project_root()
 RSCRIPTS_PATH <- file.path(PROJECT_ROOT, "r-scripts")
 CONFIG_PATH <- file.path(RSCRIPTS_PATH, "pipeline_code", "db2_config_multi_source.yaml")
 
