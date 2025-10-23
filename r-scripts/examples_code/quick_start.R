@@ -8,10 +8,10 @@ library(odbc)
 library(dplyr)
 library(glue)
 
-# Source the main functions 
+# Source the main functions
 
-source("read_db2_config_multi_source.R")  # If you need multi-source functions
-source("create_long_format_assets.R")     # Main long format functions
+source("../pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
+source("../pipeline_code/create_long_format_assets.R")     # Main long format functions
 
 # ============================================================================
 # SETUP
@@ -22,7 +22,7 @@ source("create_long_format_assets.R")     # Main long format functions
 # Sys.setenv(DB_PASSWORD = "mypassword123")
 
 # Load configuration
-config <- read_db_config("db2_config_multi_source.yaml")
+config <- read_db_config("../pipeline_code/db2_config_multi_source.yaml")
 
 # Connect to database
 #conn <- create_db2_connection(config)
@@ -96,7 +96,7 @@ export_all_asset_tables(asset_tables, format = "csv")
 
 # Run complete pipeline
 results <- create_asset_pipeline(
-  config_path = "db2_config_multi_source.yaml",
+  config_path = "../pipeline_code/db2_config_multi_source.yaml",
   patient_ids = NULL,  # All patients
   assets = c("date_of_birth", "sex", "ethnicity", "lsoa"),
   output_dir = "/mnt/user-data/outputs"
