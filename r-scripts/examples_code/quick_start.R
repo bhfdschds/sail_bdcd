@@ -9,9 +9,10 @@ library(dplyr)
 library(glue)
 
 # Source the main functions
-source("../utility_code/db2_connection.R")                 # Database connection
-source("../pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
-source("../pipeline_code/create_long_format_assets.R")     # Main long format functions
+# NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
+source("./utility_code/db2_connection.R")                 # Database connection
+source("./pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
+source("./pipeline_code/create_long_format_assets.R")     # Main long format functions
 
 # ============================================================================
 # SETUP
@@ -22,7 +23,7 @@ source("../pipeline_code/create_long_format_assets.R")     # Main long format fu
 # Sys.setenv(DB_PASSWORD = "mypassword123")
 
 # Load configuration
-config <- read_db_config("../pipeline_code/db2_config_multi_source.yaml")
+config <- read_db_config("./pipeline_code/db2_config_multi_source.yaml")
 
 # Connect to database using the standardized function
 conn <- create_db2_connection(config)

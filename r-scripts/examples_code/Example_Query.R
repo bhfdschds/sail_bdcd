@@ -4,7 +4,8 @@ library(dplyr)
 library(dbplyr)
 
 # Source the database connection function
-source("../utility_code/db2_connection.R")
+# NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
+source("./utility_code/db2_connection.R")
 
 # Connect using the standardized connection function
 # You can set DB_USER and DB_PASSWORD environment variables or use defaults
