@@ -8,7 +8,7 @@ library(dplyr)
 library(glue)
 
 # Source the main functions
-source("create_long_format_assets.R")
+source("../pipeline_code/create_long_format_assets.R")
 
 # ============================================================================
 # Setup
@@ -17,7 +17,7 @@ source("create_long_format_assets.R")
 cat("=== Testing Sex Asset Configuration ===\n\n")
 
 # Load your configuration
-config <- read_db_config("db2_config_multi_source.yaml")
+config <- read_db_config("../pipeline_code/db2_config_multi_source.yaml")
 
 # Check the configuration
 cat("Checking YAML configuration for 'sex' asset...\n\n")
