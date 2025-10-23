@@ -14,45 +14,78 @@ library(testthat)
 # Tests are now located at r-scripts/tests/testthat/
 # Find project root by searching for r-scripts directory
 
-find_project_root <- function() {
+find_project_root_and_rscripts <- function() {
   # Start from current working directory
   current <- getwd()
 
-  # Check if r-scripts exists in current directory
-  if (dir.exists(file.path(current, "r-scripts"))) {
-    return(current)
+  # SCENARIO 1: Check if current directory IS the r-scripts folder
+  # (e.g., RStudio mounted directly to r-scripts)
+  # Look for characteristic subdirectories: pipeline_code, utility_code, data_generation
+  has_pipeline <- dir.exists(file.path(current, "pipeline_code"))
+  has_utility <- dir.exists(file.path(current, "utility_code"))
+  has_data_gen <- dir.exists(file.path(current, "data_generation"))
+
+  if (has_pipeline && has_utility && has_data_gen) {
+    # We ARE in the r-scripts directory
+    return(list(
+      project_root = current,
+      rscripts_path = current
+    ))
   }
 
-  # Check if we're inside r-scripts (tests are at r-scripts/tests/testthat)
-  # If so, go up to parent directory
-  if (basename(current) == "testthat" &&
-      dir.exists(file.path(current, "..", "..", ".."))) {
-    potential_root <- normalizePath(file.path(current, "..", "..", ".."))
-    if (dir.exists(file.path(potential_root, "r-scripts"))) {
-      return(potential_root)
+  # SCENARIO 2: Check if r-scripts exists as subdirectory (normal git repo structure)
+  if (dir.exists(file.path(current, "r-scripts"))) {
+    return(list(
+      project_root = current,
+      rscripts_path = file.path(current, "r-scripts")
+    ))
+  }
+
+  # SCENARIO 3: Check if we're inside tests directory, navigate up
+  if (basename(current) == "testthat" || basename(current) == "tests") {
+    # Try going up levels to find r-scripts
+    for (levels_up in 1:4) {
+      parent_path <- normalizePath(file.path(current, paste(rep("..", levels_up), collapse = "/")))
+
+      # Check if parent has r-scripts subdirectory
+      if (dir.exists(file.path(parent_path, "r-scripts"))) {
+        return(list(
+          project_root = parent_path,
+          rscripts_path = file.path(parent_path, "r-scripts")
+        ))
+      }
+
+      # Check if parent IS r-scripts
+      has_pipeline <- dir.exists(file.path(parent_path, "pipeline_code"))
+      has_utility <- dir.exists(file.path(parent_path, "utility_code"))
+      if (has_pipeline && has_utility) {
+        return(list(
+          project_root = parent_path,
+          rscripts_path = parent_path
+        ))
+      }
     }
   }
 
-  # Try here::here() as fallback
-  root <- here::here()
-  if (dir.exists(file.path(root, "r-scripts"))) {
-    return(root)
-  }
-
-  # Last resort: search upwards from current directory
+  # SCENARIO 4: Search upwards from current directory
   search_dir <- current
-  for (i in 1:5) {  # Search up to 5 levels
+  for (i in 1:5) {
     if (dir.exists(file.path(search_dir, "r-scripts"))) {
-      return(normalizePath(search_dir))
+      return(list(
+        project_root = normalizePath(search_dir),
+        rscripts_path = file.path(normalizePath(search_dir), "r-scripts")
+      ))
     }
     search_dir <- file.path(search_dir, "..")
   }
 
-  stop("Could not find project root with r-scripts directory")
+  stop("Could not find r-scripts directory. Please ensure you're running tests from the project root or r-scripts directory.")
 }
 
-PROJECT_ROOT <- find_project_root()
-RSCRIPTS_PATH <- file.path(PROJECT_ROOT, "r-scripts")
+# Find paths
+paths <- find_project_root_and_rscripts()
+PROJECT_ROOT <- paths$project_root
+RSCRIPTS_PATH <- paths$rscripts_path
 CONFIG_PATH <- file.path(RSCRIPTS_PATH, "pipeline_code", "db2_config_multi_source.yaml")
 
 # Source the R scripts we need to test
