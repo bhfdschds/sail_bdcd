@@ -7,17 +7,17 @@ library(dplyr)
 library(glue)
 
 # Load all pipeline functions
-source("../pipeline_code/create_long_format_assets.R")
-source("../pipeline_code/generate_cohort.R")
-source("../pipeline_code/generate_covariates.R")
-source("../pipeline_code/generate_outcomes.R")
-source("../utility_code/db2_connection.R")
+source("scripts/pipeline_code/create_long_format_assets.R")
+source("scripts/pipeline_code/generate_cohort.R")
+source("scripts/pipeline_code/generate_covariates.R")
+source("scripts/pipeline_code/generate_outcomes.R")
+source("scripts/utility_code/db2_connection.R")
 
 # ============================================================================
 # STEP 1: Curate Demographics Assets
 # ============================================================================
 
-curate_demographics <- function(config_path = "../pipeline_code/db2_config_multi_source.yaml",
+curate_demographics <- function(config_path = "scripts/pipeline_code/db2_config_multi_source.yaml",
                                 patient_ids = NULL) {
   cat("\n========================================\n")
   cat("STEP 1: Curating Demographics Assets\n")
@@ -64,7 +64,7 @@ curate_demographics <- function(config_path = "../pipeline_code/db2_config_multi
 # STEP 2: Curate Disease and Treatment Assets
 # ============================================================================
 
-curate_disease_treatment <- function(config_path = "../pipeline_code/db2_config_multi_source.yaml",
+curate_disease_treatment <- function(config_path = "scripts/pipeline_code/db2_config_multi_source.yaml",
                                      patient_ids = NULL) {
   cat("\n========================================\n")
   cat("STEP 2: Curating Disease & Treatment Assets\n")
@@ -324,7 +324,7 @@ create_final_dataset <- function(cohort, covariates, outcomes) {
 # MAIN PIPELINE FUNCTION
 # ============================================================================
 
-run_complete_pipeline <- function(config_path = "../pipeline_code/db2_config_multi_source.yaml",
+run_complete_pipeline <- function(config_path = "scripts/pipeline_code/db2_config_multi_source.yaml",
                                   patient_ids = NULL,
                                   index_date = as.Date("2024-01-01"),
                                   min_age = 18,
@@ -408,5 +408,5 @@ run_complete_pipeline <- function(config_path = "../pipeline_code/db2_config_mul
 # )
 
 # Example 3: Run individual steps
-# demographics <- curate_demographics(patient_ids = 1001:1100)
+demographics <- curate_demographics(patient_ids = 1001:1100)
 # cohort <- create_study_cohort(demographics, index_date = as.Date("2024-01-01"))

@@ -146,7 +146,9 @@ create_long_format_asset <- function(conn, config, asset_name,
     stop("No data retrieved from any source")
   }
   
+  #potential issue bind_rows in dplyr
   long_format_table <- bind_rows(all_source_data)
+  #long_format_table <- union(all_source_data)
   
   # Get patient ID column name from YAML config
   # Use the R column name (the key in the columns list) that corresponds to primary_key
@@ -268,7 +270,7 @@ create_all_asset_tables <- function(conn, config, patient_ids = NULL,
   asset_tables <- list()
   
   for (asset_name in assets) {
-    cat(glue("\n{'='*60}\n"))
+    cat(glue("\n{'='}\n"))
     
     asset_table <- create_long_format_asset(
       conn, config, asset_name, patient_ids

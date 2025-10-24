@@ -67,71 +67,6 @@ assets:
             db_column: "CREATE_DT"
             data_type: "DATE"
       
-      # gp_sex2:
-      #   table_name: "PATIENT_ALF_CLEANSED"
-      #   description: "Sex from hospital demographic records"
-      #   priority: 2
-      #   data_quality: "high"
-      #   coverage: "95%"
-      #   last_updated: "2025-10-01"
-      #   primary_key: "ALF_PE"
-      #   columns:
-      #     patient_id:
-      #       db_column: "ALF_PE"
-      #       data_type: "BIGINT"
-      #     sex_code:
-      #       db_column: "GNDR_CD"
-      #       data_type: "CHAR(1)"
-      #       allowed_values: ["M", "F"]
-      #     record_date:
-      #       db_column: "CREATE_DT"
-      #       data_type: "DATE"
-      
-      # Source Table B: GP Records
-      # gp_other_sex:
-      #   table_name: "GP_PATIENT_SEX"
-      #   description: "Sex from GP registration"
-      #   priority: 2
-      #   data_quality: "medium"
-      #   coverage: "90%"
-      #   last_updated: "2025-09-20"
-      #   primary_key: "patient_id"
-      #   columns:
-      #     patient_id:
-      #       db_column: "PAT_ID"
-      #       data_type: "INTEGER"
-      #     sex_code:
-      #       db_column: "GENDER_CODE"
-      #       data_type: "VARCHAR(1)"
-      #       allowed_values: ["M", "F", "U", "I"]
-      #     record_date:
-      #       db_column: "UPDATED_DATE"
-      #       data_type: "TIMESTAMP"
-      # 
-      # # Source Table C: National Registry
-      # registry_sex:
-      #   table_name: "REGISTRY_SEX_TABLE"
-      #   description: "Sex from national patient registry"
-      #   priority: 3
-      #   data_quality: "high"
-      #   coverage: "99%"
-      #   last_updated: "2025-10-10"
-      #   primary_key: "patient_id"
-      #   columns:
-      #     patient_id:
-      #       db_column: "NHS_NUMBER"
-      #       data_type: "INTEGER"
-      #     sex_code:
-      #       db_column: "BIRTH_SEX"
-      #       data_type: "VARCHAR(1)"
-      #       allowed_values: ["M", "F"]
-      #     gender_identity:
-      #       db_column: "GENDER_IDENTITY"
-      #       data_type: "VARCHAR(100)"
-      #     record_date:
-      #       db_column: "LAST_MODIFIED"
-      #       data_type: "TIMESTAMP"
-
   # =========================================================================
   # ETHNICITY ASSET
   # =========================================================================
@@ -141,223 +76,105 @@ assets:
     
     sources:
       # Source Table A: Hospital Admission Data
-      admission_ethnicity:
-        table_name: "HOSPITAL_ADMISSIONS_ETHNICITY"
-        description: "Ethnicity recorded during hospital admissions"
-        priority: 2
-        data_quality: "medium"
-        coverage: "70%"
-        last_updated: "2025-09-30"
-        notes: "May contain multiple entries per patient from different admissions"
-        primary_key: "admission_id"
-        patient_key: "patient_id"
-        columns:
-          admission_id:
-            db_column: "ADMISSION_ID"
-            data_type: "INTEGER"
-          patient_id:
-            db_column: "PATIENT_ID"
-            data_type: "INTEGER"
-          ethnicity_code:
-            db_column: "ETHNIC_CODE"
-            data_type: "VARCHAR(2)"
-          ethnicity_category:
-            db_column: "ETHNIC_GROUP"
-            data_type: "VARCHAR(100)"
-          admission_date:
-            db_column: "ADMISSION_DATE"
-            data_type: "DATE"
-          record_date:
-            db_column: "RECORDED_DATE"
-            data_type: "TIMESTAMP"
-      
-      # Source Table B: Outpatient Records
-      outpatient_ethnicity:
-        table_name: "OUTPATIENT_ETHNICITY"
-        description: "Ethnicity from outpatient appointments"
-        priority: 3
-        data_quality: "medium"
-        coverage: "65%"
-        last_updated: "2025-10-05"
-        primary_key: "patient_id"
-        columns:
-          patient_id:
-            db_column: "PAT_ID"
-            data_type: "INTEGER"
-          ethnicity_code:
-            db_column: "ETHNICITY_CD"
-            data_type: "VARCHAR(10)"
-          ethnicity_description:
-            db_column: "ETHNICITY_DESC"
-            data_type: "VARCHAR(255)"
-          record_date:
-            db_column: "LAST_UPDATED"
-            data_type: "TIMESTAMP"
-      
-      # Source Table C: Self-Reported Ethnicity Survey
-      self_reported_ethnicity:
-        table_name: "PATIENT_ETHNICITY_SURVEY"
-        description: "Self-reported ethnicity from patient surveys"
-        priority: 1  # Highest priority - most accurate
-        data_quality: "high"
-        coverage: "55%"
-        last_updated: "2025-10-12"
-        notes: "Preferred source - directly from patients"
-        primary_key: "patient_id"
-        columns:
-          patient_id:
-            db_column: "PATIENT_ID"
-            data_type: "INTEGER"
-          ethnicity_code:
-            db_column: "ETHNICITY_CODE"
-            data_type: "VARCHAR(10)"
-          ethnicity_category:
-            db_column: "ETHNICITY_CATEGORY"
-            data_type: "VARCHAR(100)"
-          ethnicity_subcategory:
-            db_column: "ETHNICITY_SUBCATEGORY"
-            data_type: "VARCHAR(100)"
-          ethnicity_description:
-            db_column: "ETHNICITY_FULL_DESC"
-            data_type: "VARCHAR(255)"
-          self_reported:
-            db_column: "SELF_REPORTED_FLAG"
-            data_type: "BOOLEAN"
-          survey_date:
-            db_column: "SURVEY_DATE"
-            data_type: "DATE"
-          record_date:
-            db_column: "RECORD_DATE"
-            data_type: "TIMESTAMP"
-      
-      # Source Table D: GP Ethnicity Records
       gp_ethnicity:
-        table_name: "GP_ETHNICITY_DATA"
-        description: "Ethnicity from GP records"
-        priority: 4
-        data_quality: "low"
-        coverage: "80%"
-        last_updated: "2025-08-20"
-        primary_key: "patient_id"
+        table_name: "PATIENT_ALF_CLEANSED"
+        description: "Ethnicity recorded during hospital admissions"
+        priority: 1
+        primary_key: "ALF_PE"
+        #patient_key: "ALF_PE"
         columns:
           patient_id:
-            db_column: "PATIENT_NUMBER"
-            data_type: "INTEGER"
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
           ethnicity_code:
-            db_column: "ETHNIC_ORIGIN"
-            data_type: "VARCHAR(5)"
+            db_column: "REG_CAT_CD"
+            data_type: "CHAR(10)"
           record_date:
-            db_column: "ENTRY_DATE"
-            data_type: "TIMESTAMP"
-
+            db_column: "CREATE_DT"
+            data_type: "DATE"
+      
   # =========================================================================
   # LSOA ASSET
   # =========================================================================
   lsoa:
     description: "Lower Layer Super Output Area geographic information"
-    default_source: "current_address_lsoa"
+    default_source: "gp_lsoa"
     
     sources:
       # Source Table A: Current Address LSOA
-      current_address_lsoa:
-        table_name: "PATIENT_CURRENT_ADDRESS_LSOA"
+      gp_lsoa:
+        table_name: "PATIENT_ALF_CLEANSED"
         description: "LSOA from current patient address"
         priority: 1
-        data_quality: "high"
-        coverage: "92%"
-        last_updated: "2025-10-15"
-        primary_key: "patient_id"
+        primary_key: "ALF_PE"
+        
         columns:
           patient_id:
-            db_column: "PATIENT_ID"
-            data_type: "INTEGER"
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
           lsoa_code:
-            db_column: "LSOA_CODE_2021"
-            data_type: "VARCHAR(10)"
-          lsoa_name:
-            db_column: "LSOA_NAME"
-            data_type: "VARCHAR(255)"
-          msoa_code:
-            db_column: "MSOA_CODE_2021"
-            data_type: "VARCHAR(10)"
-          local_authority:
-            db_column: "LOCAL_AUTHORITY_NAME"
-            data_type: "VARCHAR(100)"
-          region:
-            db_column: "REGION_NAME"
-            data_type: "VARCHAR(100)"
-          imd_decile:
-            db_column: "IMD_DECILE_2019"
-            data_type: "INTEGER"
-          imd_quintile:
-            db_column: "IMD_QUINTILE_2019"
-            data_type: "INTEGER"
-          postcode:
-            db_column: "POSTCODE"
-            data_type: "VARCHAR(10)"
-          address_from_date:
-            db_column: "ADDRESS_START_DATE"
-            data_type: "DATE"
+            db_column: "LSOA_CD"
+            data_type: "CHAR(15)"
           record_date:
-            db_column: "RECORD_DATE"
-            data_type: "TIMESTAMP"
+            db_column: "CREATE_DT"
+            data_type: "DATE"
       
       # Source Table B: GP Registration LSOA
-      gp_registration_lsoa:
-        table_name: "GP_REGISTRATION_LSOA"
-        description: "LSOA from GP registration address"
-        priority: 2
-        data_quality: "medium"
-        coverage: "88%"
-        last_updated: "2025-09-25"
-        primary_key: "patient_id"
-        columns:
-          patient_id:
-            db_column: "PAT_ID"
-            data_type: "INTEGER"
-          lsoa_code:
-            db_column: "LSOA"
-            data_type: "VARCHAR(10)"
-          imd_decile:
-            db_column: "DEPRIVATION_DECILE"
-            data_type: "INTEGER"
-          postcode_sector:
-            db_column: "POSTCODE_SECTOR"
-            data_type: "VARCHAR(10)"
-          record_date:
-            db_column: "REGISTRATION_DATE"
-            data_type: "TIMESTAMP"
-      
-      # Source Table C: Hospital Episode LSOA
-      hospital_episode_lsoa:
-        table_name: "HOSPITAL_EPISODE_LSOA"
-        description: "LSOA from hospital episode statistics"
-        priority: 3
-        data_quality: "medium"
-        coverage: "85%"
-        last_updated: "2025-10-01"
-        notes: "LSOA at time of admission - may be historical"
-        primary_key: "episode_id"
-        patient_key: "patient_id"
-        columns:
-          episode_id:
-            db_column: "EPISODE_ID"
-            data_type: "INTEGER"
-          patient_id:
-            db_column: "PATIENT_ID"
-            data_type: "INTEGER"
-          lsoa_code:
-            db_column: "LSOA_OF_RESIDENCE"
-            data_type: "VARCHAR(10)"
-          imd_decile:
-            db_column: "IMD_DECILE"
-            data_type: "INTEGER"
-          episode_date:
-            db_column: "EPISODE_START_DATE"
-            data_type: "DATE"
-          record_date:
-            db_column: "RECORD_DATE"
-            data_type: "TIMESTAMP"
+      # gp_registration_lsoa:
+      #   table_name: "GP_REGISTRATION_LSOA"
+      #   description: "LSOA from GP registration address"
+      #   priority: 2
+      #   data_quality: "medium"
+      #   coverage: "88%"
+      #   last_updated: "2025-09-25"
+      #   primary_key: "patient_id"
+      #   columns:
+      #     patient_id:
+      #       db_column: "PAT_ID"
+      #       data_type: "INTEGER"
+      #     lsoa_code:
+      #       db_column: "LSOA"
+      #       data_type: "VARCHAR(10)"
+      #     imd_decile:
+      #       db_column: "DEPRIVATION_DECILE"
+      #       data_type: "INTEGER"
+      #     postcode_sector:
+      #       db_column: "POSTCODE_SECTOR"
+      #       data_type: "VARCHAR(10)"
+      #     record_date:
+      #       db_column: "REGISTRATION_DATE"
+      #       data_type: "TIMESTAMP"
+      # 
+      # # Source Table C: Hospital Episode LSOA
+      # hospital_episode_lsoa:
+      #   table_name: "HOSPITAL_EPISODE_LSOA"
+      #   description: "LSOA from hospital episode statistics"
+      #   priority: 3
+      #   data_quality: "medium"
+      #   coverage: "85%"
+      #   last_updated: "2025-10-01"
+      #   notes: "LSOA at time of admission - may be historical"
+      #   primary_key: "episode_id"
+      #   patient_key: "patient_id"
+      #   columns:
+      #     episode_id:
+      #       db_column: "EPISODE_ID"
+      #       data_type: "INTEGER"
+      #     patient_id:
+      #       db_column: "PATIENT_ID"
+      #       data_type: "INTEGER"
+      #     lsoa_code:
+      #       db_column: "LSOA_OF_RESIDENCE"
+      #       data_type: "VARCHAR(10)"
+      #     imd_decile:
+      #       db_column: "IMD_DECILE"
+      #       data_type: "INTEGER"
+      #     episode_date:
+      #       db_column: "EPISODE_START_DATE"
+      #       data_type: "DATE"
+      #     record_date:
+      #       db_column: "RECORD_DATE"
+      #       data_type: "TIMESTAMP"
 
 # ============================================================================
 # Project Configurations

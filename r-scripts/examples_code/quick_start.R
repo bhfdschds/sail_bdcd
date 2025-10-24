@@ -69,6 +69,25 @@ conflicts <- check_conflicts(date_of_birth_long, "date_of_birth")
 # Export to CSV
 #export_asset_table(sex_long, "sex", format = "csv")
 
+lsoa_long <- create_long_format_asset(
+  conn = conn,
+  config = config,
+  asset_name = "lsoa",
+  patient_ids = NULL  # NULL = all patients, or specify: c(1001, 1002, 1003)
+)
+
+# View first few rows
+head(lsoa_long)
+
+# Get summary statistics
+summarize_long_format_table(lsoa_long, "lsoa")
+
+# Check for conflicts
+conflicts <- check_conflicts(lsoa_long, "lsoa")
+
+# Export to CSV
+#export_asset_table(sex_long, "sex", format = "csv")
+
 # ============================================================================
 # OPTION 2: Create All Asset Tables at Once
 # ============================================================================
