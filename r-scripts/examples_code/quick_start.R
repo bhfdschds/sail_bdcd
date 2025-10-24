@@ -10,9 +10,9 @@ library(glue)
 
 # Source the main functions
 # NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
-source("./utility_code/db2_connection.R")                 # Database connection
-source("./pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
-source("./pipeline_code/create_long_format_assets.R")     # Main long format functions
+source("scripts/utility_code/db2_connection.R")                 # Database connection
+source("scripts/pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
+source("scripts/pipeline_code/create_long_format_assets.R")     # Main long format functions
 
 # ============================================================================
 # SETUP
@@ -23,7 +23,7 @@ source("./pipeline_code/create_long_format_assets.R")     # Main long format fun
 # Sys.setenv(DB_PASSWORD = "mypassword123")
 
 # Load configuration
-config <- read_db_config("./pipeline_code/db2_config_multi_source.yaml")
+config <- read_db_config("scripts/pipeline_code/db2_config_multi_source.yaml")
 
 # Connect to database using the standardized function
 conn <- create_db2_connection(config)
@@ -32,14 +32,7 @@ conn <- create_db2_connection(config)
 # OPTION 1: Create Single Asset Long Format Table
 # ============================================================================
 
-# Example: Create ethnicity long format table
-# ethnicity_long <- create_long_format_asset(
-#   conn = conn,
-#   config = config,
-#   asset_name = "ethnicity",
-#   patient_ids = NULL  # NULL = all patients, or specify: c(1001, 1002, 1003)
-# )
-
+# Example: Create sex long format table
 sex_long <- create_long_format_asset(
   conn = conn,
   config = config,
@@ -56,41 +49,58 @@ summarize_long_format_table(sex_long, "sex")
 # Check for conflicts
 conflicts <- check_conflicts(sex_long, "sex", "sex_code")
 
+
+date_of_birth_long <- create_long_format_asset(
+  conn = conn,
+  config = config,
+  asset_name = "date_of_birth",
+  patient_ids = NULL  # NULL = all patients, or specify: c(1001, 1002, 1003)
+)
+
+# View first few rows
+head(date_of_birth_long)
+
+# Get summary statistics
+summarize_long_format_table(date_of_birth_long, "date_of_birth")
+
+# Check for conflicts
+conflicts <- check_conflicts(date_of_birth_long, "date_of_birth")
+
 # Export to CSV
-export_asset_table(sex_long, "ethnicity", format = "csv")
+#export_asset_table(sex_long, "sex", format = "csv")
 
 # ============================================================================
 # OPTION 2: Create All Asset Tables at Once
 # ============================================================================
 
 # Create long format tables for all assets
-asset_tables <- create_all_asset_tables(
-  conn = conn,
-  config = config,
-  patient_ids = NULL,  # NULL = all patients
-  assets = c("date_of_birth", "sex", "ethnicity", "lsoa")
-)
+# asset_tables <- create_all_asset_tables(
+#   conn = conn,
+#   config = config,
+#   patient_ids = NULL,  # NULL = all patients
+#   assets = c("date_of_birth", "sex", "ethnicity", "lsoa")
+# )
 
 # Access individual tables
-dob_long <- asset_tables$date_of_birth
-sex_long <- asset_tables$sex
-ethnicity_long <- asset_tables$ethnicity
-lsoa_long <- asset_tables$lsoa
+# dob_long <- asset_tables$date_of_birth
+# sex_long <- asset_tables$sex
+# ethnicity_long <- asset_tables$ethnicity
+# lsoa_long <- asset_tables$lsoa
 
 # Export all tables
-export_all_asset_tables(asset_tables, format = "csv")
+# export_all_asset_tables(asset_tables, format = "csv")
 
 # ============================================================================
 # OPTION 3: Full Pipeline with Analysis
 # ============================================================================
 
 # Run complete pipeline
-results <- create_asset_pipeline(
-  config_path = "../pipeline_code/db2_config_multi_source.yaml",
-  patient_ids = NULL,  # All patients
-  assets = c("date_of_birth", "sex", "ethnicity", "lsoa"),
-  output_dir = "/mnt/user-data/outputs"
-)
+# results <- create_asset_pipeline(
+#   config_path = "../pipeline_code/db2_config_multi_source.yaml",
+#   patient_ids = NULL,  # All patients
+#   assets = c("date_of_birth", "sex", "ethnicity", "lsoa"),
+#   output_dir = "/mnt/user-data/outputs"
+# )
 
 # Results contain:
 # - asset_tables: List of long format tables
