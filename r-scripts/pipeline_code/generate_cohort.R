@@ -179,14 +179,33 @@ combine_demographics <- function(dob_asset, sex_asset, ethnicity_asset = NULL,
 # 3. Example Usage
 # ============================================================================
 
-example_generate_cohort <- function() {
+example_generate_cohort <- function(conn = NULL, use_database = TRUE) {
   # Example: Generate cohort with age and sex restrictions
+  # Args:
+  #   conn: Database connection (required if use_database = TRUE)
+  #   use_database: If TRUE, read from database; if FALSE, read from RDS files
 
-  # Load demographics assets (assuming they've been created)
-  dob_asset <- readRDS("/mnt/user-data/outputs/date_of_birth_long_format.rds")
-  sex_asset <- readRDS("/mnt/user-data/outputs/sex_long_format.rds")
-  ethnicity_asset <- readRDS("/mnt/user-data/outputs/ethnicity_long_format.rds")
-  lsoa_asset <- readRDS("/mnt/user-data/outputs/lsoa_long_format.rds")
+  # Source utility functions if using database
+  if (use_database && !exists("read_from_db")) {
+    source("scripts/utility_code/db_table_utils.R")
+  }
+
+  if (use_database) {
+    # Load demographics assets from database
+    if (is.null(conn)) {
+      stop("Database connection required when use_database = TRUE")
+    }
+    dob_asset <- read_from_db(conn, "DATE_OF_BIRTH_LONG_FORMAT")
+    sex_asset <- read_from_db(conn, "SEX_LONG_FORMAT")
+    ethnicity_asset <- read_from_db(conn, "ETHNICITY_LONG_FORMAT")
+    lsoa_asset <- read_from_db(conn, "LSOA_LONG_FORMAT")
+  } else {
+    # Legacy: Load demographics assets from RDS files
+    dob_asset <- readRDS("/mnt/user-data/outputs/date_of_birth_long_format.rds")
+    sex_asset <- readRDS("/mnt/user-data/outputs/sex_long_format.rds")
+    ethnicity_asset <- readRDS("/mnt/user-data/outputs/ethnicity_long_format.rds")
+    lsoa_asset <- readRDS("/mnt/user-data/outputs/lsoa_long_format.rds")
+  }
 
   # Get highest priority per patient
   dob_clean <- get_highest_priority_per_patient(dob_asset)
@@ -210,9 +229,15 @@ example_generate_cohort <- function() {
     require_lsoa = TRUE
   )
 
-  # Export cohort
-  saveRDS(cohort, "/mnt/user-data/outputs/study_cohort.rds")
-  write.csv(cohort, "/mnt/user-data/outputs/study_cohort.csv", row.names = FALSE)
+  # Save cohort
+  if (use_database && !is.null(conn)) {
+    # Save to database
+    save_to_db(conn, cohort, "STUDY_COHORT")
+  } else {
+    # Legacy: Save to files
+    saveRDS(cohort, "/mnt/user-data/outputs/study_cohort.rds")
+    write.csv(cohort, "/mnt/user-data/outputs/study_cohort.csv", row.names = FALSE)
+  }
 
   return(cohort)
 }

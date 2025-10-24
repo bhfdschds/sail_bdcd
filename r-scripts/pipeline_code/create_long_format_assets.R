@@ -412,45 +412,70 @@ get_highest_priority_per_patient <- function(long_table) {
 # 6. Export Functions
 # ============================================================================
 
-export_asset_table <- function(long_table, asset_name, 
+export_asset_table <- function(long_table, asset_name,
+                               conn = NULL,
                                output_dir = "/mnt/user-data/outputs",
-                               format = "csv") {
-  # Export long format table to file
-  
-  filename <- glue("{output_dir}/{asset_name}_long_format.{format}")
-  
-  if (format == "csv") {
+                               format = "database") {
+  # Export long format table to database or file
+  # format options: "database" (default), "csv", "rds"
+
+  if (format == "database") {
+    # Save to database (preferred method)
+    if (is.null(conn)) {
+      stop("Database connection (conn) required when format='database'")
+    }
+
+    # Source the db_table_utils if not already loaded
+    if (!exists("save_to_db")) {
+      source(file.path(dirname(sys.frame(1)$ofile), "../utility_code/db_table_utils.R"))
+    }
+
+    table_name <- paste0(asset_name, "_long_format")
+    save_to_db(conn, long_table, table_name, schema = "DB2INST1", overwrite = TRUE)
+
+    return(toupper(table_name))
+
+  } else if (format == "csv") {
+    # Legacy: Save to CSV file
+    filename <- glue("{output_dir}/{asset_name}_long_format.{format}")
     write.csv(long_table, filename, row.names = FALSE)
+    cat(glue("✓ Exported {asset_name} to: {filename}\n"))
+    cat(glue("  Rows: {nrow(long_table)}, Columns: {ncol(long_table)}\n"))
+    return(filename)
+
   } else if (format == "rds") {
+    # Legacy: Save to RDS file
+    filename <- glue("{output_dir}/{asset_name}_long_format.{format}")
     saveRDS(long_table, filename)
+    cat(glue("✓ Exported {asset_name} to: {filename}\n"))
+    cat(glue("  Rows: {nrow(long_table)}, Columns: {ncol(long_table)}\n"))
+    return(filename)
+
   } else {
-    stop("Format must be 'csv' or 'rds'")
+    stop("Format must be 'database', 'csv', or 'rds'")
   }
-  
-  cat(glue("✓ Exported {asset_name} to: {filename}\n"))
-  cat(glue("  Rows: {nrow(long_table)}, Columns: {ncol(long_table)}\n"))
-  
-  return(filename)
 }
 
-export_all_asset_tables <- function(asset_tables, 
+export_all_asset_tables <- function(asset_tables,
+                                    conn = NULL,
                                     output_dir = "/mnt/user-data/outputs",
-                                    format = "csv") {
-  # Export all asset tables
-  
-  exported_files <- list()
-  
+                                    format = "database") {
+  # Export all asset tables to database or files
+
+  exported_refs <- list()
+
   for (asset_name in names(asset_tables)) {
-    filename <- export_asset_table(
+    ref <- export_asset_table(
       asset_tables[[asset_name]],
       asset_name,
+      conn,
       output_dir,
       format
     )
-    exported_files[[asset_name]] <- filename
+    exported_refs[[asset_name]] <- ref
   }
-  
-  return(exported_files)
+
+  return(exported_refs)
 }
 
 # ============================================================================
@@ -580,37 +605,39 @@ example_sex_analysis <- function() {
 
 create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
                                   patient_ids = NULL,
-                                  assets = c("date_of_birth", "sex", 
+                                  assets = c("date_of_birth", "sex",
                                              "ethnicity", "lsoa"),
-                                  output_dir = "/mnt/user-data/outputs") {
+                                  output_dir = "/mnt/user-data/outputs",
+                                  format = "database") {
   # Complete pipeline to create and export all asset tables
-  
+  # format: "database" (default, saves to DB2INST1 schema), "csv", or "rds"
+
   cat("\n==========================================================\n")
   cat("ASSET LONG FORMAT TABLE CREATION PIPELINE\n")
   cat("==========================================================\n\n")
-  
+
   # 1. Load configuration
   cat("Step 1: Loading configuration...\n")
   config <- read_db_config(config_path)
-  
+
   # 2. Connect to database
   cat("Step 2: Connecting to database...\n")
   conn <- create_db2_connection(config)
-  
+
   # 3. Create asset tables
   cat("\nStep 3: Creating long format tables...\n")
   asset_tables <- create_all_asset_tables(conn, config, patient_ids, assets)
-  
+
   # 4. Generate summaries
   cat("\nStep 4: Generating summaries...\n")
   summaries <- list()
   for (asset_name in names(asset_tables)) {
     summaries[[asset_name]] <- summarize_long_format_table(
-      asset_tables[[asset_name]], 
+      asset_tables[[asset_name]],
       asset_name
     )
   }
-  
+
   # 5. Check conflicts
   cat("\nStep 5: Checking for conflicts...\n")
   conflicts <- list()
@@ -620,7 +647,7 @@ create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
     ethnicity = "ethnicity_code",
     lsoa = "lsoa_code"
   )
-  
+
   for (asset_name in names(asset_tables)) {
     if (asset_name %in% names(key_columns)) {
       conflicts[[asset_name]] <- check_conflicts(
@@ -630,27 +657,35 @@ create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
       )
     }
   }
-  
+
   # 6. Export tables
   cat("\nStep 6: Exporting tables...\n")
-  exported_files <- export_all_asset_tables(asset_tables, output_dir)
-  
+  exported_refs <- export_all_asset_tables(asset_tables, conn, output_dir, format)
+
   # 7. Disconnect
   DBI::dbDisconnect(conn)
-  
+
   cat("\n==========================================================\n")
   cat("PIPELINE COMPLETE!\n")
   cat("==========================================================\n\n")
-  cat("Exported files:\n")
-  for (asset_name in names(exported_files)) {
-    cat(glue("  {asset_name}: {exported_files[[asset_name]]}\n"))
+
+  if (format == "database") {
+    cat("Exported to database tables:\n")
+    for (asset_name in names(exported_refs)) {
+      cat(glue("  {asset_name}: DB2INST1.{exported_refs[[asset_name]]}\n"))
+    }
+  } else {
+    cat("Exported files:\n")
+    for (asset_name in names(exported_refs)) {
+      cat(glue("  {asset_name}: {exported_refs[[asset_name]]}\n"))
+    }
   }
-  
+
   return(list(
     asset_tables = asset_tables,
     summaries = summaries,
     conflicts = conflicts,
-    exported_files = exported_files
+    exported_refs = exported_refs
   ))
 }
 

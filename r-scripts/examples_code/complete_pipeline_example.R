@@ -12,6 +12,7 @@ source("scripts/pipeline_code/generate_cohort.R")
 source("scripts/pipeline_code/generate_covariates.R")
 source("scripts/pipeline_code/generate_outcomes.R")
 source("scripts/utility_code/db2_connection.R")
+source("scripts/utility_code/db_table_utils.R")
 
 # ============================================================================
 # STEP 1: Curate Demographics Assets
@@ -51,9 +52,8 @@ curate_demographics <- function(config_path = "scripts/pipeline_code/db2_config_
     lsoa_asset = lsoa_clean
   )
 
-  # Export
-  saveRDS(demographics, "/mnt/user-data/outputs/demographics_combined.rds")
-  cat("\n✓ Demographics saved to: /mnt/user-data/outputs/demographics_combined.rds\n")
+  # Save to database instead of RDS file
+  save_to_db(conn, demographics, "DEMOGRAPHICS_COMBINED")
 
   DBI::dbDisconnect(conn)
 
@@ -85,17 +85,11 @@ curate_disease_treatment <- function(config_path = "scripts/pipeline_code/db2_co
                "primary_care_medicines", "deaths")
   )
 
-  # Export each asset
-  saveRDS(disease_assets$hospital_admissions,
-          "/mnt/user-data/outputs/hospital_admissions_long_format.rds")
-  saveRDS(disease_assets$primary_care,
-          "/mnt/user-data/outputs/primary_care_long_format.rds")
-  saveRDS(disease_assets$primary_care_medicines,
-          "/mnt/user-data/outputs/primary_care_medicines_long_format.rds")
-  saveRDS(disease_assets$deaths,
-          "/mnt/user-data/outputs/deaths_long_format.rds")
-
-  cat("\n✓ Disease/treatment assets saved\n")
+  # Save to database instead of RDS files
+  save_to_db(conn, disease_assets$hospital_admissions, "HOSPITAL_ADMISSIONS_LONG_FORMAT")
+  save_to_db(conn, disease_assets$primary_care, "PRIMARY_CARE_LONG_FORMAT")
+  save_to_db(conn, disease_assets$primary_care_medicines, "PRIMARY_CARE_MEDICINES_LONG_FORMAT")
+  save_to_db(conn, disease_assets$deaths, "DEATHS_LONG_FORMAT")
 
   DBI::dbDisconnect(conn)
 
@@ -106,7 +100,7 @@ curate_disease_treatment <- function(config_path = "scripts/pipeline_code/db2_co
 # STEP 3: Generate Cohort
 # ============================================================================
 
-create_study_cohort <- function(demographics,
+create_study_cohort <- function(conn, demographics,
                                 index_date = as.Date("2024-01-01"),
                                 min_age = 18,
                                 max_age = 100) {
@@ -124,11 +118,8 @@ create_study_cohort <- function(demographics,
     require_lsoa = TRUE
   )
 
-  # Export
-  saveRDS(cohort, "/mnt/user-data/outputs/study_cohort.rds")
-  write.csv(cohort, "/mnt/user-data/outputs/study_cohort.csv", row.names = FALSE)
-
-  cat("\n✓ Cohort saved to: /mnt/user-data/outputs/study_cohort.rds\n")
+  # Save to database instead of RDS/CSV files
+  save_to_db(conn, cohort, "STUDY_COHORT")
 
   return(cohort)
 }
@@ -137,7 +128,7 @@ create_study_cohort <- function(demographics,
 # STEP 4: Generate Covariates
 # ============================================================================
 
-create_covariates <- function(disease_assets, cohort) {
+create_covariates <- function(conn, disease_assets, cohort) {
   cat("\n========================================\n")
   cat("STEP 4: Generating Covariates\n")
   cat("========================================\n\n")
@@ -191,11 +182,8 @@ create_covariates <- function(disease_assets, cohort) {
     calculate_days_to_index = TRUE
   )
 
-  # Export
-  saveRDS(covariates, "/mnt/user-data/outputs/cohort_with_covariates.rds")
-  write.csv(covariates, "/mnt/user-data/outputs/cohort_with_covariates.csv", row.names = FALSE)
-
-  cat("\n✓ Covariates saved to: /mnt/user-data/outputs/cohort_with_covariates.rds\n")
+  # Save to database instead of RDS/CSV files
+  save_to_db(conn, covariates, "COHORT_WITH_COVARIATES")
 
   return(covariates)
 }
@@ -204,7 +192,7 @@ create_covariates <- function(disease_assets, cohort) {
 # STEP 5: Generate Outcomes
 # ============================================================================
 
-create_outcomes <- function(disease_assets, cohort,
+create_outcomes <- function(conn, disease_assets, cohort,
                             follow_up_days = 365) {
   cat("\n========================================\n")
   cat("STEP 5: Generating Outcomes\n")
@@ -255,11 +243,8 @@ create_outcomes <- function(disease_assets, cohort,
     calculate_days_from_index = TRUE
   )
 
-  # Export
-  saveRDS(outcomes, "/mnt/user-data/outputs/cohort_with_outcomes.rds")
-  write.csv(outcomes, "/mnt/user-data/outputs/cohort_with_outcomes.csv", row.names = FALSE)
-
-  cat("\n✓ Outcomes saved to: /mnt/user-data/outputs/cohort_with_outcomes.rds\n")
+  # Save to database instead of RDS/CSV files
+  save_to_db(conn, outcomes, "COHORT_WITH_OUTCOMES")
 
   return(outcomes)
 }
@@ -268,7 +253,7 @@ create_outcomes <- function(disease_assets, cohort,
 # STEP 6: Combine Final Dataset
 # ============================================================================
 
-create_final_dataset <- function(cohort, covariates, outcomes) {
+create_final_dataset <- function(conn, cohort, covariates, outcomes) {
   cat("\n========================================\n")
   cat("STEP 6: Creating Final Analysis Dataset\n")
   cat("========================================\n\n")
@@ -311,11 +296,8 @@ create_final_dataset <- function(cohort, covariates, outcomes) {
   cat(glue("  Heart failure: {sum(final_data$heart_failure_outcome_flag)} ({round(100*mean(final_data$heart_failure_outcome_flag), 1)}%)\n"))
   cat(glue("  Death: {sum(final_data$death_outcome_flag)} ({round(100*mean(final_data$death_outcome_flag), 1)}%)\n"))
 
-  # Export
-  saveRDS(final_data, "/mnt/user-data/outputs/final_analysis_dataset.rds")
-  write.csv(final_data, "/mnt/user-data/outputs/final_analysis_dataset.csv", row.names = FALSE)
-
-  cat("\n✓ Final dataset saved to: /mnt/user-data/outputs/final_analysis_dataset.rds\n")
+  # Save to database instead of RDS/CSV files
+  save_to_db(conn, final_data, "FINAL_ANALYSIS_DATASET")
 
   return(final_data)
 }
@@ -350,6 +332,10 @@ run_complete_pipeline <- function(config_path = "scripts/pipeline_code/db2_confi
 
   start_time <- Sys.time()
 
+  # Create database connection for the pipeline
+  config <- read_db_config(config_path)
+  conn <- create_db2_connection(config)
+
   # Step 1: Curate demographics
   demographics <- curate_demographics(config_path, patient_ids)
 
@@ -357,16 +343,19 @@ run_complete_pipeline <- function(config_path = "scripts/pipeline_code/db2_confi
   disease_assets <- curate_disease_treatment(config_path, patient_ids)
 
   # Step 3: Generate cohort
-  cohort <- create_study_cohort(demographics, index_date, min_age, max_age)
+  cohort <- create_study_cohort(conn, demographics, index_date, min_age, max_age)
 
   # Step 4: Generate covariates
-  covariates <- create_covariates(disease_assets, cohort)
+  covariates <- create_covariates(conn, disease_assets, cohort)
 
   # Step 5: Generate outcomes
-  outcomes <- create_outcomes(disease_assets, cohort, follow_up_days)
+  outcomes <- create_outcomes(conn, disease_assets, cohort, follow_up_days)
 
   # Step 6: Create final dataset
-  final_data <- create_final_dataset(cohort, covariates, outcomes)
+  final_data <- create_final_dataset(conn, cohort, covariates, outcomes)
+
+  # Close connection
+  DBI::dbDisconnect(conn)
 
   end_time <- Sys.time()
   duration <- difftime(end_time, start_time, units = "mins")

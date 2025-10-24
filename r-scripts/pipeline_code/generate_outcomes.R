@@ -297,12 +297,29 @@ generate_multiple_outcomes <- function(disease_treatment_asset,
 # 4. Example Usage
 # ============================================================================
 
-example_generate_outcomes <- function() {
+example_generate_outcomes <- function(conn = NULL, use_database = TRUE) {
   # Example: Generate heart attack and stroke outcomes
+  # Args:
+  #   conn: Database connection (required if use_database = TRUE)
+  #   use_database: If TRUE, read from/write to database; if FALSE, use RDS files
 
-  # Load assets
-  cohort <- readRDS("/mnt/user-data/outputs/study_cohort.rds")
-  disease_asset <- readRDS("/mnt/user-data/outputs/hospital_admissions_long_format.rds")
+  # Source utility functions if using database
+  if (use_database && !exists("read_from_db")) {
+    source("scripts/utility_code/db_table_utils.R")
+  }
+
+  if (use_database) {
+    # Load assets from database
+    if (is.null(conn)) {
+      stop("Database connection required when use_database = TRUE")
+    }
+    cohort <- read_from_db(conn, "STUDY_COHORT")
+    disease_asset <- read_from_db(conn, "HOSPITAL_ADMISSIONS_LONG_FORMAT")
+  } else {
+    # Legacy: Load assets from RDS files
+    cohort <- readRDS("/mnt/user-data/outputs/study_cohort.rds")
+    disease_asset <- readRDS("/mnt/user-data/outputs/hospital_admissions_long_format.rds")
+  }
 
   # Create lookup table
   lookup_table <- data.frame(
@@ -346,8 +363,14 @@ example_generate_outcomes <- function() {
     selection_method = "min"
   )
 
-  # Export
-  saveRDS(outcomes, "/mnt/user-data/outputs/cohort_with_outcomes.rds")
+  # Save outcomes
+  if (use_database && !is.null(conn)) {
+    # Save to database
+    save_to_db(conn, outcomes, "COHORT_WITH_OUTCOMES")
+  } else {
+    # Legacy: Save to file
+    saveRDS(outcomes, "/mnt/user-data/outputs/cohort_with_outcomes.rds")
+  }
 
   return(outcomes)
 }
