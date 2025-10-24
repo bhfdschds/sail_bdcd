@@ -268,7 +268,7 @@ create_all_asset_tables <- function(conn, config, patient_ids = NULL,
   asset_tables <- list()
   
   for (asset_name in assets) {
-    cat(glue("\n{'='*60}\n"))
+    cat(glue("\n{'='*}\n"))
     
     asset_table <- create_long_format_asset(
       conn, config, asset_name, patient_ids
@@ -478,30 +478,30 @@ pivot_to_wide_by_source <- function(long_table, value_columns) {
 # 8. Example Usage
 # ============================================================================
 
-example_create_ethnicity_table <- function() {
-  # Example: Create long format ethnicity table from all sources
+example_sex_table <- function() {
+  # Example: Create long format sex table from all sources
   
   config <- read_db_config("db2_config_multi_source.yaml")
   conn <- create_db2_connection(config)
   
-  # Create long format ethnicity table
+  # Create long format sex table
   ethnicity_long <- create_long_format_asset(
     conn, config,
-    asset_name = "ethnicity",
+    asset_name = "sex",
     patient_ids = c(1001, 1002, 1003, 1004, 1005)
   )
   
   # View the table
-  print(ethnicity_long)
+  print(sex_long)
   
   # Summarize
-  summarize_long_format_table(ethnicity_long, "ethnicity")
+  summarize_long_format_table(sex_long, "sex")
   
   # Check for conflicts
-  conflicts <- check_conflicts(ethnicity_long, "ethnicity", "ethnicity_code")
+  conflicts <- check_conflicts(ethnicity_long, "sex", "sex_code")
   
   # Export
-  export_asset_table(ethnicity_long, "ethnicity")
+  export_asset_table(sex_long, "sex")
   
   DBI::dbDisconnect(conn)
 }
@@ -535,39 +535,39 @@ example_create_all_assets <- function() {
   DBI::dbDisconnect(conn)
 }
 
-example_ethnicity_analysis <- function() {
+example_sex_analysis <- function() {
   # Example: Detailed ethnicity analysis
   
-  config <- read_db_config("db2_config_multi_source.yaml")
+  config <- read_db_config("scripts/pipeline_code/db2_config_multi_source.yaml")
   conn <- create_db2_connection(config)
   
   # Create long format ethnicity table
-  ethnicity_long <- create_long_format_asset(
+  sex_long <- create_long_format_asset(
     conn, config,
-    asset_name = "ethnicity"
+    asset_name = "sex"
   )
   
   # 1. Check conflicts
   cat("\n1. Checking for conflicts...\n")
-  conflicts <- check_conflicts(ethnicity_long, "ethnicity", "ethnicity_code")
+  conflicts <- check_conflicts(sex_long, "sex", "sex_code")
   
   # 2. Get highest priority value per patient
   cat("\n2. Creating wide format with highest priority per patient...\n")
-  ethnicity_wide <- get_highest_priority_per_patient(ethnicity_long)
+  sex_wide <- get_highest_priority_per_patient(sex_long)
   
   # 3. Pivot to compare sources side-by-side
   cat("\n3. Creating comparison table (wide format by source)...\n")
   ethnicity_comparison <- pivot_to_wide_by_source(
-    ethnicity_long,
-    c("ethnicity_code", "ethnicity_category")
+    sex_long,
+    c("sex_code", "sex_category")
   )
   
   print("Comparison table (first 5 patients):")
-  print(head(ethnicity_comparison, 5))
+  print(head(sex_comparison, 5))
   
   # 4. Export both formats
-  export_asset_table(ethnicity_long, "ethnicity", format = "csv")
-  export_asset_table(ethnicity_wide, "ethnicity_priority", format = "csv")
+  export_asset_table(sex_long, "sex", format = "csv")
+  export_asset_table(sex_wide, "sex_priority", format = "csv")
   
   DBI::dbDisconnect(conn)
 }
@@ -657,9 +657,9 @@ create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
 # ============================================================================
 
 # Uncomment to run:
-# example_create_ethnicity_table()
+# example_create_sex_table()
 # example_create_all_assets()
-# example_ethnicity_analysis()
+# example_sex_analysis()
 
 # Or run complete pipeline:
 # results <- create_asset_pipeline(patient_ids = c(1001:2000))
