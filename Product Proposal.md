@@ -15,7 +15,12 @@
 - Long form deaths data  
 
 ## generate_cohort
-- Uses the demographics asset  
+- Uses the demographics asset
+- Applies restrictions
+  - Age at index date
+  - Known Sex
+  - known Ethnicity
+  - LSOA at index date
 
 ## generate_covariates
 - Uses the Disease and Treatments assets  
