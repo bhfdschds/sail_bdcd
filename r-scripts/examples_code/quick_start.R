@@ -11,6 +11,7 @@ library(glue)
 # Source the main functions
 # NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
 source("scripts/utility_code/db2_connection.R")                 # Database connection
+source("scripts/utility_code/db_table_utils.R")                 # Database table utilities
 source("scripts/pipeline_code/read_db2_config_multi_source.R")  # If you need multi-source functions
 source("scripts/pipeline_code/create_long_format_assets.R")     # Main long format functions
 
@@ -65,6 +66,25 @@ summarize_long_format_table(date_of_birth_long, "date_of_birth")
 
 # Check for conflicts
 conflicts <- check_conflicts(date_of_birth_long, "date_of_birth")
+
+# Export to CSV
+#export_asset_table(sex_long, "sex", format = "csv")
+
+lsoa_long <- create_long_format_asset(
+  conn = conn,
+  config = config,
+  asset_name = "lsoa",
+  patient_ids = NULL  # NULL = all patients, or specify: c(1001, 1002, 1003)
+)
+
+# View first few rows
+head(lsoa_long)
+
+# Get summary statistics
+summarize_long_format_table(lsoa_long, "lsoa")
+
+# Check for conflicts
+conflicts <- check_conflicts(lsoa_long, "lsoa")
 
 # Export to CSV
 #export_asset_table(sex_long, "sex", format = "csv")
@@ -197,10 +217,22 @@ patient_demographics <- dob_resolved %>%
     by = "patient_id"
   )
 
-# Export combined demographics
-write.csv(patient_demographics, 
-          "/mnt/user-data/outputs/patient_demographics_combined.csv",
-          row.names = FALSE)
+# Save combined demographics to database (preferred) or CSV (legacy)
+USE_DATABASE <- TRUE  # Set to FALSE to use CSV files instead
+
+if (USE_DATABASE) {
+  # Save to database
+  save_to_db(conn, patient_demographics, "PATIENT_DEMOGRAPHICS_COMBINED")
+  cat("\n✓ All done! Data saved to database tables in DB2INST1 schema.\n")
+  cat("Use read_from_db(conn, 'PATIENT_DEMOGRAPHICS_COMBINED') to retrieve the data.\n")
+} else {
+  # Legacy: Save to CSV
+  write.csv(patient_demographics,
+            "/mnt/user-data/outputs/patient_demographics_combined.csv",
+            row.names = FALSE)
+  cat("\n✓ All done!\n")
+  cat("Check /mnt/user-data/outputs/ for exported files.\n")
+}
 
 # ============================================================================
 # CLEANUP
@@ -208,6 +240,3 @@ write.csv(patient_demographics,
 
 # Close database connection when done
 DBI::dbDisconnect(conn)
-
-cat("\n✓ All done!\n")
-cat("Check /mnt/user-data/outputs/ for exported files.\n")
