@@ -4,7 +4,7 @@
 library(yaml)
 library(DBI)
 library(odbc)
-library(dplyr)
+library(dbplyr)
 library(glue)
 library(tidyr)
 
@@ -268,7 +268,7 @@ create_all_asset_tables <- function(conn, config, patient_ids = NULL,
   asset_tables <- list()
   
   for (asset_name in assets) {
-    cat(glue("\n{'='*}\n"))
+    cat(glue("\n{'='*60}\n"))
     
     asset_table <- create_long_format_asset(
       conn, config, asset_name, patient_ids

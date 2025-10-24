@@ -22,69 +22,25 @@ assets:
   # =========================================================================
   date_of_birth:
     description: "Patient date of birth information"
-    default_source: "hospital_dob"  # Default table to use if not specified
+    default_source: "gp_dob"  # Default table to use if not specified
     
     sources:
-      # Source Table A: Hospital System DOB
-      hospital_dob:
-        table_name: "HOSPITAL_DOB_TABLE"
-        description: "Date of birth from hospital registration system"
-        priority: 1  # Higher priority = preferred source
-        data_quality: "high"
-        coverage: "95%"
-        last_updated: "2025-10-01"
-        primary_key: "patient_id"
-        columns:
-          patient_id:
-            db_column: "PATIENT_ID"
-            data_type: "INTEGER"
-          date_of_birth:
-            db_column: "DOB"
-            data_type: "DATE"
-          record_date:
-            db_column: "RECORD_DATE"
-            data_type: "TIMESTAMP"
-      
-      # Source Table B: GP System DOB
       gp_dob:
-        table_name: "GP_DOB_TABLE"
-        description: "Date of birth from GP registration"
-        priority: 2
-        data_quality: "medium"
-        coverage: "88%"
-        last_updated: "2025-09-15"
-        primary_key: "patient_id"
+        table_name: "PATIENT_ALF_CLEANSED"
+        description: "Date of birth from gp patient table"
+        priority: 1  # Higher priority = preferred source
+        primary_key: "ALF_PE"
         columns:
           patient_id:
-            db_column: "PAT_ID"
-            data_type: "INTEGER"
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
           date_of_birth:
-            db_column: "DATE_OF_BIRTH"
-            data_type: "DATE"
+             db_column: "WOB"
+             data_type: "DATE"  
           record_date:
-            db_column: "CREATED_DATE"
-            data_type: "TIMESTAMP"
+            db_column: "CREATE_DT"
+            data_type: "DATE"
       
-      # Source Table C: National Registry DOB
-      registry_dob:
-        table_name: "NATIONAL_REGISTRY_DOB"
-        description: "Date of birth from national patient registry"
-        priority: 3
-        data_quality: "high"
-        coverage: "99%"
-        last_updated: "2025-10-10"
-        primary_key: "patient_id"
-        columns:
-          patient_id:
-            db_column: "NHS_NUMBER"
-            data_type: "INTEGER"
-          date_of_birth:
-            db_column: "BIRTH_DATE"
-            data_type: "DATE"
-          year_of_birth:
-          record_date:
-            db_column: "LAST_MODIFIED"
-            data_type: "TIMESTAMP"
 
   # =========================================================================
   # SEX ASSET
@@ -94,7 +50,6 @@ assets:
     default_source: "gp_sex"
     
     sources:
-      
       gp_sex:
         table_name: "PATIENT_ALF_CLEANSED"
         description: "Sex from hospital demographic records"
@@ -131,6 +86,7 @@ assets:
       #     record_date:
       #       db_column: "CREATE_DT"
       #       data_type: "DATE"
+      
       # Source Table B: GP Records
       # gp_other_sex:
       #   table_name: "GP_PATIENT_SEX"
