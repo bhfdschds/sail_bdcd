@@ -1,0 +1,377 @@
+================================================================================
+                    DATA CURATION PIPELINE - VISUAL FLOW
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  DATABASE LAYER (IBM DB2)                                                │
+│  ════════════════════════════════════════════════════════════════════   │
+│                                                                          │
+│  DEMOGRAPHICS TABLES              CLINICAL TABLES                        │
+│  ┌───────────────────┐            ┌─────────────────────┐              │
+│  │ PATIENT_ALF_      │            │ PEDW_EPISODE        │              │
+│  │ CLEANSED          │            │ (Hospital Admis)    │              │
+│  │                   │            │                     │              │
+│  │ 10,000 patients   │            │ 500,000 episodes    │              │
+│  │ ALF_PE, WOB,      │            │ ALF_PE, ADMIS_DT,   │              │
+│  │ GNDR_CD           │            │ DIAG_CD_1234        │              │
+│  └───────────────────┘            └─────────────────────┘              │
+│                                                                          │
+│  ┌───────────────────┐            ┌─────────────────────┐              │
+│  │ ETHNICITY_        │            │ WLGP_GP_EVENT_      │              │
+│  │ TABLES (×4)       │            │ CLEANSED (GP)       │              │
+│  │                   │            │                     │              │
+│  │ Multiple sources  │            │ 2M GP events        │              │
+│  └───────────────────┘            └─────────────────────┘              │
+│                                                                          │
+│                                   ┌─────────────────────┐              │
+│                                   │ WLGP_MEDICATION_    │              │
+│                                   │ CLEANSED            │              │
+│                                   │                     │              │
+│                                   │ 1.5M prescriptions  │              │
+│                                   └─────────────────────┘              │
+│                                                                          │
+│                                   ┌─────────────────────┐              │
+│                                   │ ADDE_DEATHS         │              │
+│                                   │                     │              │
+│                                   │ 1,200 deaths        │              │
+│                                   └─────────────────────┘              │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+                    ╔═══════════════╧═══════════════╗
+                    ║  FUNCTION:                    ║
+                    ║  create_long_format_asset()   ║
+                    ║                               ║
+                    ║  • SQL query generation       ║
+                    ║  • Extract from DB2           ║
+                    ║  • Add source metadata        ║
+                    ║  • Standardize columns        ║
+                    ╚═══════════════╤═══════════════╝
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  LONG FORMAT ASSETS LAYER                                                │
+│  ════════════════════════════════════════════════════════════════════   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ DATE_OF_BIRTH_LONG_FORMAT.RDS                                   │   │
+│  ├────────────┬──────────────┬─────────────┬──────────────┬────────┤   │
+│  │ patient_id │ source_table │ source_prio │ date_of_birth│ record │   │
+│  ├────────────┼──────────────┼─────────────┼──────────────┼────────┤   │
+│  │    1001    │    gp_dob    │      1      │  1950-05-15  │ 2020-  │   │
+│  │    1002    │    gp_dob    │      1      │  1965-08-22  │ 2020-  │   │
+│  │    ...     │     ...      │     ...     │     ...      │  ...   │   │
+│  └────────────┴──────────────┴─────────────┴──────────────┴────────┘   │
+│  Rows: 10,000 | Cols: 5                                                 │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ SEX_LONG_FORMAT.RDS, ETHNICITY_LONG_FORMAT.RDS,                │   │
+│  │ LSOA_LONG_FORMAT.RDS                                            │   │
+│  │ (Similar structure)                                              │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ HOSPITAL_ADMISSIONS_LONG_FORMAT.RDS                             │   │
+│  ├────────────┬──────────────┬────────────┬──────┬───────┬────────┤   │
+│  │ patient_id │ source_table │ event_date │ code │ termin│ ...    │   │
+│  ├────────────┼──────────────┼────────────┼──────┼───────┼────────┤   │
+│  │    1001    │     pedw     │ 2023-03-15 │  I21 │ ICD10 │  ...   │   │
+│  │    1001    │     pedw     │ 2023-07-22 │  E11 │ ICD10 │  ...   │   │
+│  │    1002    │     pedw     │ 2023-05-10 │  I10 │ ICD10 │  ...   │   │
+│  │    ...     │     ...      │    ...     │  ... │  ...  │  ...   │   │
+│  └────────────┴──────────────┴────────────┴──────┴───────┴────────┘   │
+│  Rows: 500,000 | Cols: 8                                                │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ PRIMARY_CARE_LONG_FORMAT.RDS, MEDICINES_LONG_FORMAT.RDS,       │   │
+│  │ DEATHS_LONG_FORMAT.RDS                                          │   │
+│  │ (Similar structure)                                              │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+          ╔═════════════════════════╧═════════════════════════╗
+          ║  FUNCTION:                                        ║
+          ║  get_highest_priority_per_patient()               ║
+          ║  combine_demographics()                           ║
+          ║                                                   ║
+          ║  • Resolve multi-source conflicts                ║
+          ║  • Select highest priority source                ║
+          ║  • Join all demographics assets                  ║
+          ╚═════════════════════════╤═════════════════════════╝
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  COMBINED DEMOGRAPHICS LAYER                                             │
+│  ════════════════════════════════════════════════════════════════════   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ DEMOGRAPHICS_COMBINED.RDS                                       │   │
+│  ├──────────┬──────────────┬──────────┬──────────────┬───────────┤   │
+│  │ patient  │ date_of_birth│ sex_code │ ethnicity_cd │ lsoa_code │   │
+│  ├──────────┼──────────────┼──────────┼──────────────┼───────────┤   │
+│  │   1001   │  1950-05-15  │    M     │      W       │ W01000001 │   │
+│  │   1002   │  1965-08-22  │    F     │      A       │ W01000002 │   │
+│  │   1003   │  1975-12-10  │    M     │      W       │ W01000003 │   │
+│  │   1004   │  1980-03-18  │    F     │     NA       │ W01000004 │   │
+│  │   1005   │  2010-06-25  │    M     │      B       │    NA     │   │
+│  │   ...    │     ...      │   ...    │     ...      │    ...    │   │
+│  └──────────┴──────────────┴──────────┴──────────────┴───────────┘   │
+│                                                                          │
+│  Rows: 10,000 patients (one row per patient)                            │
+│  Cols: 5 (patient_id + 4 demographics)                                  │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+                    ╔═══════════════╧═══════════════╗
+                    ║  FUNCTION:                    ║
+                    ║  generate_cohort()            ║
+                    ║                               ║
+                    ║  • Add index_date             ║
+                    ║  • Calculate age_at_index     ║
+                    ║  • Apply age restrictions     ║
+                    ║  • Apply sex restrictions     ║
+                    ║  • Apply ethnicity restrict.  ║
+                    ║  • Apply LSOA restrictions    ║
+                    ╚═══════════════╤═══════════════╝
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  STUDY COHORT LAYER                                                      │
+│  ════════════════════════════════════════════════════════════════════   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ STUDY_COHORT.RDS                                                │   │
+│  ├────────┬────────────┬──────────────┬──────────┬───────┬────────┤   │
+│  │patient │ index_date │ age_at_index │ sex_code │ethnic │  lsoa  │   │
+│  ├────────┼────────────┼──────────────┼──────────┼───────┼────────┤   │
+│  │  1001  │ 2024-01-01 │     73.6     │    M     │   W   │W010001 │   │
+│  │  1002  │ 2024-01-01 │     58.4     │    F     │   A   │W010002 │   │
+│  │  1003  │ 2024-01-01 │     48.1     │    M     │   W   │W010003 │   │
+│  │  1004  │ 2024-01-01 │     43.7     │    F     │   W   │W010004 │   │
+│  │  ...   │    ...     │     ...      │   ...    │  ...  │  ...   │   │
+│  └────────┴────────────┴──────────────┴──────────┴───────┴────────┘   │
+│                                                                          │
+│  Rows: 9,598 patients (402 excluded by restrictions)                    │
+│  Cols: 7 (original 5 + index_date + age_at_index)                       │
+│                                                                          │
+│  EXCLUSIONS:                                                             │
+│  • 234 patients: age < 18 or age > 100                                  │
+│  •  45 patients: missing sex                                            │
+│  • 123 patients: missing LSOA                                            │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+            COVARIATES PATH                   OUTCOMES PATH
+                    │                               │
+                    ▼                               ▼
+    ╔═══════════════════════════╗   ╔═══════════════════════════╗
+    ║  FUNCTION:                ║   ║  FUNCTION:                ║
+    ║  generate_covariates()    ║   ║  generate_outcomes()      ║
+    ║                           ║   ║                           ║
+    ║  • Filter by codes        ║   ║  • Filter by codes        ║
+    ║  • Quality report         ║   ║  • Quality report         ║
+    ║  • Apply LOOKBACK window  ║   ║  • Apply FOLLOWUP window  ║
+    ║  • Select min/max date    ║   ║  • Select min/max date    ║
+    ║  • Create flags & dates   ║   ║  • Create flags & dates   ║
+    ╚═══════════════╤═══════════╝   ╚═══════════════╤═══════════╝
+                    │                               │
+                    ▼                               ▼
+
+┌────────────────────────────┐       ┌────────────────────────────┐
+│  COVARIATES LAYER          │       │  OUTCOMES LAYER            │
+│  ══════════════════════════│       │  ══════════════════════════│
+│                            │       │                            │
+│  COHORT_WITH_COVARIATES    │       │  COHORT_WITH_OUTCOMES      │
+│  .RDS                      │       │  .RDS                      │
+│  ┌─────┬────────┬────────┐│       │  ┌─────┬────────┬────────┐│
+│  │pat  │diabetes│hyperten││       │  │pat  │heart_  │ stroke ││
+│  │_id  │  _flag │  _flag ││       │  │_id  │atk_flag│  _flag ││
+│  ├─────┼────────┼────────┤│       │  ├─────┼────────┼────────┤│
+│  │1001 │  TRUE  │  TRUE  ││       │  │1001 │  TRUE  │ FALSE  ││
+│  │1002 │  FALSE │  TRUE  ││       │  │1002 │  FALSE │  TRUE  ││
+│  │1003 │  TRUE  │  FALSE ││       │  │1003 │  FALSE │ FALSE  ││
+│  │...  │  ...   │  ...   ││       │  │...  │  ...   │  ...   ││
+│  └─────┴────────┴────────┘│       │  └─────┴────────┴────────┘│
+│                            │       │                            │
+│  + diabetes_date           │       │  + heart_attack_date       │
+│  + diabetes_days_to_index  │       │  + heart_attack_days_from  │
+│  + hypertension_date       │       │  + stroke_date             │
+│  + hypertension_days_to    │       │  + stroke_days_from_index  │
+│  + copd_flag, chd_flag...  │       │  + death_flag...           │
+│                            │       │                            │
+│  Rows: 9,598               │       │  Rows: 9,598               │
+│  Cols: 19 (7 base + 12)    │       │  Cols: 16 (7 base + 9)     │
+└────────────────────────────┘       └────────────────────────────┘
+                    │                               │
+                    └───────────────┬───────────────┘
+                                    │
+                        ╔═══════════╧═══════════╗
+                        ║  FUNCTION:            ║
+                        ║  Left Joins           ║
+                        ║                       ║
+                        ║  • Cohort + Covar.    ║
+                        ║  • Result + Outcomes  ║
+                        ║  • Summary stats      ║
+                        ╚═══════════╤═══════════╝
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  FINAL ANALYSIS DATASET                                                  │
+│  ════════════════════════════════════════════════════════════════════   │
+│                                                                          │
+│  FINAL_ANALYSIS_DATASET.RDS                                              │
+│  ┌────┬──────┬───┬───┬──────┬──────┬──────┬───────┬──────┬──────┬──┐  │
+│  │pat │index │age│sex│diab  │hyper │copd  │heart_ │stroke│death │..│  │
+│  │_id │_date │   │   │_flag │_flag │_flag │atk_fl │_flag │_flag │  │  │
+│  ├────┼──────┼───┼───┼──────┼──────┼──────┼───────┼──────┼──────┼──┤  │
+│  │1001│01-01 │74 │ M │ TRUE │ TRUE │FALSE │ TRUE  │FALSE │FALSE │..│  │
+│  │1002│01-01 │58 │ F │FALSE │ TRUE │FALSE │ FALSE │ TRUE │FALSE │..│  │
+│  │1003│01-01 │48 │ M │ TRUE │FALSE │FALSE │ FALSE │FALSE │FALSE │..│  │
+│  │1004│01-01 │44 │ F │FALSE │ TRUE │ TRUE │ FALSE │FALSE │FALSE │..│  │
+│  │... │ ...  │...│...│ ...  │ ...  │ ...  │  ...  │ ...  │ ...  │..│  │
+│  └────┴──────┴───┴───┴──────┴──────┴──────┴───────┴──────┴──────┴──┘  │
+│                                                                          │
+│  COMPLETE STRUCTURE:                                                     │
+│  • Demographics: patient_id, index_date, age, sex, ethnicity, lsoa      │
+│  • Covariates (×4): diabetes, hypertension, copd, chd                   │
+│    - For each: _flag, _date, _days_to_index                             │
+│  • Outcomes (×4): heart_attack, stroke, heart_failure, death            │
+│    - For each: _flag, _date, _days_from_index                           │
+│                                                                          │
+│  Rows: 9,598 patients                                                    │
+│  Cols: 35+ columns                                                       │
+│                                                                          │
+│  ✓ READY FOR STATISTICAL ANALYSIS                                        │
+│  ✓ ONE ROW PER PATIENT                                                   │
+│  ✓ WIDE FORMAT                                                           │
+│  ✓ ALL COHORT PATIENTS PRESERVED                                         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+TEMPORAL WINDOWS EXPLAINED
+================================================================================
+
+COVARIATES (Lookback from Index Date)
+──────────────────────────────────────
+
+         days_before_start          days_before_end
+              <-------|--------------------|-----> Time
+                      |                    |
+                Event Window           Index Date
+
+Example: Diabetes diagnosis "any time before"
+  days_before_start = NULL (unlimited)
+  days_before_end = 0 (day before index)
+
+  Patient Timeline:
+  2020-05-10: Diabetes diagnosis ✓ (included)
+  2023-11-20: Diabetes diagnosis ✓ (included, but min selected)
+  2024-01-01: INDEX DATE
+  2024-03-15: Another event (excluded - after index)
+
+  Result: covariate_date = 2020-05-10 (first diagnosis)
+          days_to_index = -987 days
+
+
+OUTCOMES (Follow-up after Index Date)
+──────────────────────────────────────
+
+                days_after_start       days_after_end
+      <-----------|--------------------|--------> Time
+                  |                    |
+              Index Date           Event Window
+
+Example: Heart attack "within 365 days"
+  days_after_start = 0 (from index)
+  days_after_end = 365 (within 1 year)
+
+  Patient Timeline:
+  2023-11-20: Some event (excluded - before index)
+  2024-01-01: INDEX DATE
+  2024-03-15: Heart attack ✓ (included)
+  2024-06-10: Another heart attack ✓ (included, but min selected)
+  2025-02-01: Event (excluded - beyond 365 days)
+
+  Result: outcome_date = 2024-03-15 (first occurrence)
+          days_from_index = +74 days
+
+
+================================================================================
+DATA VOLUME AT EACH STAGE
+================================================================================
+
+Stage                           Patients    Rows       Columns   File Size
+──────────────────────────────────────────────────────────────────────────────
+Database (raw)                  10,000      varies     varies    N/A
+Demographics long format        10,000      15,000     8         2 MB
+Demographics combined           10,000      10,000     5         500 KB
+Hospital admissions long        10,000      500,000    8         40 MB
+Primary care long               10,000      2,000,000  8         160 MB
+Medicines long                  10,000      1,500,000  8         120 MB
+Deaths long                     10,000      1,200      8         100 KB
+Study cohort (after restrict.)  9,598       9,598      7         480 KB
+Cohort with covariates          9,598       9,598      19        960 KB
+Cohort with outcomes            9,598       9,598      16        800 KB
+Final analysis dataset          9,598       9,598      35+       1.7 MB
+
+
+================================================================================
+PROCESSING TIME ESTIMATES
+================================================================================
+
+Step                               Duration        Bottleneck
+──────────────────────────────────────────────────────────────────────────────
+1. Extract demographics (4 tables) 2-3 min         DB2 query performance
+2. Extract hospital admissions     3-5 min         DB2 + data volume
+3. Extract primary care            5-8 min         DB2 + data volume
+4. Extract medicines               4-6 min         DB2 + data volume
+5. Extract deaths                  <1 min          Small table
+6. Combine demographics            <30 sec         In-memory joins
+7. Generate cohort                 <30 sec         Simple filters
+8. Generate covariates (×4)        5-10 min        Temporal windows
+9. Generate outcomes (×4)          5-10 min        Temporal windows
+10. Final merge                    <1 min          In-memory joins
+
+TOTAL: 25-45 minutes (depends on DB2 performance and patient count)
+
+
+================================================================================
+KEY FUNCTIONS SUMMARY
+================================================================================
+
+Function Name                  Input                    Output
+──────────────────────────────────────────────────────────────────────────────
+create_long_format_asset()     DB connection, asset     Long format table
+                               name, config             (multi-source)
+
+get_highest_priority_          Long format table        Wide format table
+  per_patient()                (multi-source)           (one row/patient)
+
+combine_demographics()         4 demographic assets     Combined demographics
+
+generate_cohort()              Demographics, index      Study cohort
+                               date, restrictions       (filtered)
+
+generate_covariates()          Disease data, cohort,    Covariate flags
+                               lookup, temporal         and dates
+
+generate_outcomes()            Disease data, cohort,    Outcome flags
+                               lookup, temporal         and dates
+
+run_complete_pipeline()        Patient IDs, dates       Final dataset
+                               restrictions             (analysis-ready)
+
+
+================================================================================
