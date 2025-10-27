@@ -104,6 +104,43 @@ CREATE TABLE sail.WLGP_CLEANED_GP_REG_MEDIAN (
     START_DATE DATE NOT NULL
 )")
 
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_DIAG(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_SPELL(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_DIAG(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_EPISODE(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_OPER(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_SUPERSPELL(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_SINGLE_DIAG_TABLE(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_SINGLE_OPER_TABLE(
+)")
+
+dbExecute(conn, "
+CREATE TABLE sail.PEDEW_ADMISSION_TABLE(
+)")
+
+
 # Optionally grant privileges (adjust if your DB supports it)
 # dbExecute(con, "GRANT ALL ON TABLE sail.GP_EVENT_REFORMATTED TO PUBLIC")
 # dbExecute(con, "GRANT ALL ON TABLE sail.GP_EVENT_CODES TO PUBLIC")
