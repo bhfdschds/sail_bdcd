@@ -230,7 +230,7 @@ create_outcomes <- function(conn, disease_assets, cohort,
   # Combine hospital and death data for outcomes
   outcome_data <- bind_rows(
     #disease_assets$hospital_admissions,
-    disease_assets$deaths
+    #disease_assets$deaths
   )
 
   # Generate multiple outcomes
