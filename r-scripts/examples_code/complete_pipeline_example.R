@@ -81,15 +81,17 @@ curate_disease_treatment <- function(config_path = "scripts/pipeline_code/db2_co
     conn = conn,
     config = config,
     patient_ids = patient_ids,
-    assets = c("hospital_admissions", "primary_care",
-               "primary_care_medicines", "deaths")
+    #assets = c("hospital_admissions", "primary_care",
+    #          "primary_care_medicines", "deaths")
+    assets = c( "primary_care")
   )
 
+
   # Save to database instead of RDS files
-  save_to_db(conn, disease_assets$hospital_admissions, "HOSPITAL_ADMISSIONS_LONG_FORMAT")
+  #save_to_db(conn, disease_assets$hospital_admissions, "HOSPITAL_ADMISSIONS_LONG_FORMAT")
   save_to_db(conn, disease_assets$primary_care, "PRIMARY_CARE_LONG_FORMAT")
-  save_to_db(conn, disease_assets$primary_care_medicines, "PRIMARY_CARE_MEDICINES_LONG_FORMAT")
-  save_to_db(conn, disease_assets$deaths, "DEATHS_LONG_FORMAT")
+  #save_to_db(conn, disease_assets$primary_care_medicines, "PRIMARY_CARE_MEDICINES_LONG_FORMAT")
+  #save_to_db(conn, disease_assets$deaths, "DEATHS_LONG_FORMAT")
 
   DBI::dbDisconnect(conn)
 
@@ -137,7 +139,7 @@ create_covariates <- function(conn, disease_assets, cohort) {
   covariate_lookup <- data.frame(
     code = c(
       # Diabetes codes (ICD10)
-      "E10", "E11", "E12", "E13", "E14",
+      274,"E10", "E11", "E12", "E13", "E14",
       # Hypertension codes (ICD10)
       "I10", "I11", "I12", "I13", "I15",
       # COPD codes (ICD10)
@@ -146,13 +148,13 @@ create_covariates <- function(conn, disease_assets, cohort) {
       "I20", "I21", "I22", "I23", "I24", "I25"
     ),
     name = c(
-      "diabetes", "diabetes", "diabetes", "diabetes", "diabetes",
-      "hypertension", "hypertension", "hypertension", "hypertension", "hypertension",
+      "d","d", "d", "d", "d", "d",
+      "h", "h", "h", "h", "h",
       "copd", "copd",
       "chd", "chd", "chd", "chd", "chd", "chd"
     ),
     description = c(
-      "Type 1 diabetes", "Type 2 diabetes", "Diabetes related to malnutrition",
+      "Type 1 diabetes", "Type 1 diabetes", "Type 2 diabetes", "Diabetes related to malnutrition",
       "Other specified diabetes", "Unspecified diabetes",
       "Essential hypertension", "Hypertensive heart disease",
       "Hypertensive renal disease", "Hypertensive heart and renal disease",
@@ -166,7 +168,7 @@ create_covariates <- function(conn, disease_assets, cohort) {
 
   # Combine hospital and primary care data
   disease_data <- bind_rows(
-    disease_assets$hospital_admissions,
+    #disease_assets$hospital_admissions,
     disease_assets$primary_care
   )
 
@@ -175,7 +177,7 @@ create_covariates <- function(conn, disease_assets, cohort) {
     disease_treatment_asset = disease_data,
     cohort = cohort,
     lookup_table = covariate_lookup,
-    covariate_names = c("diabetes", "hypertension", "copd", "chd"),
+    covariate_names = c("d", "h", "copd", "chd"),
     days_before_start = NULL,  # Any time before
     days_before_end = 0,       # Up to day before index
     selection_method = "min",  # First occurrence
@@ -227,7 +229,7 @@ create_outcomes <- function(conn, disease_assets, cohort,
 
   # Combine hospital and death data for outcomes
   outcome_data <- bind_rows(
-    disease_assets$hospital_admissions,
+    #disease_assets$hospital_admissions,
     disease_assets$deaths
   )
 
@@ -381,13 +383,13 @@ run_complete_pipeline <- function(config_path = "scripts/pipeline_code/db2_confi
 # ============================================================================
 
 # Example 1: Run complete pipeline with sample of patients
-# results <- run_complete_pipeline(
-#   patient_ids = 1001:2000,
-#   index_date = as.Date("2024-01-01"),
-#   min_age = 18,
-#   max_age = 100,
-#   follow_up_days = 365
-# )
+results <- run_complete_pipeline(
+   patient_ids = 1001:2000,
+   index_date = as.Date("2024-01-01"),
+   min_age = 18,
+   max_age = 100,
+   follow_up_days = 365
+ )
 
 # Example 2: Run complete pipeline with all patients
 # results <- run_complete_pipeline(
@@ -397,5 +399,7 @@ run_complete_pipeline <- function(config_path = "scripts/pipeline_code/db2_confi
 # )
 
 # Example 3: Run individual steps
-demographics <- curate_demographics(patient_ids = 1001:1100)
-# cohort <- create_study_cohort(demographics, index_date = as.Date("2024-01-01"))
+#demographics <- curate_demographics(patient_ids = NULL)
+#config <- read_db_config("scripts/pipeline_code/db2_config_multi_source.yaml")
+#cohort <- create_study_cohort(conn, demographics, index_date = as.Date("2024-01-01"))
+# DBI::dbDisconnect(conn)

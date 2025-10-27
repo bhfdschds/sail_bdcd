@@ -118,63 +118,144 @@ assets:
           record_date:
             db_column: "CREATE_DT"
             data_type: "DATE"
-      
-      # Source Table B: GP Registration LSOA
-      # gp_registration_lsoa:
-      #   table_name: "GP_REGISTRATION_LSOA"
-      #   description: "LSOA from GP registration address"
-      #   priority: 2
-      #   data_quality: "medium"
-      #   coverage: "88%"
-      #   last_updated: "2025-09-25"
-      #   primary_key: "patient_id"
-      #   columns:
-      #     patient_id:
-      #       db_column: "PAT_ID"
-      #       data_type: "INTEGER"
-      #     lsoa_code:
-      #       db_column: "LSOA"
-      #       data_type: "VARCHAR(10)"
-      #     imd_decile:
-      #       db_column: "DEPRIVATION_DECILE"
-      #       data_type: "INTEGER"
-      #     postcode_sector:
-      #       db_column: "POSTCODE_SECTOR"
-      #       data_type: "VARCHAR(10)"
-      #     record_date:
-      #       db_column: "REGISTRATION_DATE"
-      #       data_type: "TIMESTAMP"
-      # 
-      # # Source Table C: Hospital Episode LSOA
-      # hospital_episode_lsoa:
-      #   table_name: "HOSPITAL_EPISODE_LSOA"
-      #   description: "LSOA from hospital episode statistics"
-      #   priority: 3
-      #   data_quality: "medium"
-      #   coverage: "85%"
-      #   last_updated: "2025-10-01"
-      #   notes: "LSOA at time of admission - may be historical"
-      #   primary_key: "episode_id"
-      #   patient_key: "patient_id"
-      #   columns:
-      #     episode_id:
-      #       db_column: "EPISODE_ID"
-      #       data_type: "INTEGER"
-      #     patient_id:
-      #       db_column: "PATIENT_ID"
-      #       data_type: "INTEGER"
-      #     lsoa_code:
-      #       db_column: "LSOA_OF_RESIDENCE"
-      #       data_type: "VARCHAR(10)"
-      #     imd_decile:
-      #       db_column: "IMD_DECILE"
-      #       data_type: "INTEGER"
-      #     episode_date:
-      #       db_column: "EPISODE_START_DATE"
-      #       data_type: "DATE"
-      #     record_date:
-      #       db_column: "RECORD_DATE"
-      #       data_type: "TIMESTAMP"
+
+  # =========================================================================
+  # HOSPITAL ADMISSIONS ASSET
+  # =========================================================================
+  hospital_admissions:
+    description: "Hospital admission records with diagnoses"
+    default_source: "pedw"
+
+    sources:
+      pedw:
+        table_name: "PEDW_EPISODE"
+        description: "Patient Episode Database for Wales (PEDW)"
+        priority: 1
+        data_quality: "high"
+        coverage: "98%"
+        primary_key: "ALF_PE"
+        columns:
+          patient_id:
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
+          event_date:
+            db_column: "ADMIS_DT"
+            data_type: "DATE"
+            description: "Admission date"
+          code:
+            db_column: "DIAG_CD_1234"
+            data_type: "VARCHAR(20)"
+            description: "Primary diagnosis code"
+          terminology:
+            db_column: "DIAG_CD_VERSION"
+            data_type: "VARCHAR(10)"
+            description: "Coding system (ICD10, ICD9)"
+          episode_id:
+            db_column: "PROV_UNIT_CD"
+            data_type: "VARCHAR(20)"
+
+  # =========================================================================
+  # PRIMARY CARE DATA ASSET
+  # =========================================================================
+  primary_care:
+    description: "Primary care events and diagnoses"
+    default_source: "wlgp"
+
+    sources:
+      wlgp:
+        table_name: "GP_EVENT_REFORMATTED"
+        description: "Welsh Longitudinal General Practice dataset"
+        priority: 1
+        data_quality: "high"
+        coverage: "95%"
+        primary_key: "ALF_E"
+        columns:
+          patient_id:
+            db_column: "ALF_E"
+            data_type: "BIGINT"
+          event_date:
+            db_column: "EVENT_DT"
+            data_type: "DATE"
+          code:
+            db_column: "EVENT_CD_ID"
+            data_type: "INT"
+            description: "Read code or SNOMED code"
+          event_value:
+            db_column: "EVENT_VAL"
+            data_type: "DECIMAL(10,2)"
+
+  # =========================================================================
+  # PRIMARY CARE MEDICINES ASSET
+  # =========================================================================
+  primary_care_medicines:
+    description: "Primary care medicine prescriptions"
+    default_source: "wlgp_medicines"
+
+    sources:
+      wlgp_medicines:
+        table_name: "WLGP_MEDICATION_CLEANSED"
+        description: "Welsh Longitudinal GP prescriptions"
+        priority: 1
+        data_quality: "high"
+        coverage: "95%"
+        primary_key: "ALF_PE"
+        columns:
+          patient_id:
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
+          event_date:
+            db_column: "EVENT_DT"
+            data_type: "DATE"
+            description: "Prescription date"
+          code:
+            db_column: "BNF_CD"
+            data_type: "VARCHAR(20)"
+            description: "BNF code"
+          terminology:
+            db_column: "BNF_VERSION"
+            data_type: "VARCHAR(10)"
+            description: "BNF version"
+          drug_name:
+            db_column: "DRUG_NAME"
+            data_type: "VARCHAR(200)"
+          quantity:
+            db_column: "QTY"
+            data_type: "INTEGER"
+
+  # =========================================================================
+  # DEATHS DATA ASSET
+  # =========================================================================
+  deaths:
+    description: "Death registrations with causes"
+    default_source: "adde"
+
+    sources:
+      adde:
+        table_name: "ADDE_DEATHS"
+        description: "Annual District Death Extract"
+        priority: 1
+        data_quality: "high"
+        coverage: "100%"
+        primary_key: "ALF_PE"
+        columns:
+          patient_id:
+            db_column: "ALF_PE"
+            data_type: "BIGINT"
+          event_date:
+            db_column: "DOD"
+            data_type: "DATE"
+            description: "Date of death"
+          code:
+            db_column: "UNDERLYING_CAUSE_CD"
+            data_type: "VARCHAR(20)"
+            description: "Underlying cause of death"
+          terminology:
+            db_column: "CAUSE_CD_VERSION"
+            data_type: "VARCHAR(10)"
+            description: "ICD10"
+          location:
+            db_column: "PLACE_OF_DEATH"
+            data_type: "VARCHAR(100)"
 
 # ============================================================================
 # Project Configurations
@@ -301,152 +382,6 @@ data_quality:
       - "lsoa_code MATCHES '[EWNSL][0-9]{8}'"
       - "imd_decile BETWEEN 1 AND 10"
       - "imd_quintile BETWEEN 1 AND 5"
-
-# ============================================================================
-# Disease and Treatment Assets
-# ============================================================================
-
-  # =========================================================================
-  # HOSPITAL ADMISSIONS ASSET
-  # =========================================================================
-  hospital_admissions:
-    description: "Hospital admission records with diagnoses"
-    default_source: "pedw"
-
-    sources:
-      pedw:
-        table_name: "PEDW_EPISODE"
-        description: "Patient Episode Database for Wales (PEDW)"
-        priority: 1
-        data_quality: "high"
-        coverage: "98%"
-        primary_key: "ALF_PE"
-        columns:
-          patient_id:
-            db_column: "ALF_PE"
-            data_type: "BIGINT"
-          event_date:
-            db_column: "ADMIS_DT"
-            data_type: "DATE"
-            description: "Admission date"
-          code:
-            db_column: "DIAG_CD_1234"
-            data_type: "VARCHAR(20)"
-            description: "Primary diagnosis code"
-          terminology:
-            db_column: "DIAG_CD_VERSION"
-            data_type: "VARCHAR(10)"
-            description: "Coding system (ICD10, ICD9)"
-          episode_id:
-            db_column: "PROV_UNIT_CD"
-            data_type: "VARCHAR(20)"
-
-  # =========================================================================
-  # PRIMARY CARE DATA ASSET
-  # =========================================================================
-  primary_care:
-    description: "Primary care events and diagnoses"
-    default_source: "wlgp"
-
-    sources:
-      wlgp:
-        table_name: "WLGP_GP_EVENT_CLEANSED"
-        description: "Welsh Longitudinal General Practice dataset"
-        priority: 1
-        data_quality: "high"
-        coverage: "95%"
-        primary_key: "ALF_PE"
-        columns:
-          patient_id:
-            db_column: "ALF_PE"
-            data_type: "BIGINT"
-          event_date:
-            db_column: "EVENT_DT"
-            data_type: "DATE"
-          code:
-            db_column: "EVENT_CD"
-            data_type: "VARCHAR(20)"
-            description: "Read code or SNOMED code"
-          terminology:
-            db_column: "EVENT_CD_VERSION"
-            data_type: "VARCHAR(10)"
-            description: "Coding system (Read2, CTV3, SNOMED)"
-          event_value:
-            db_column: "EVENT_VAL"
-            data_type: "VARCHAR(100)"
-
-  # =========================================================================
-  # PRIMARY CARE MEDICINES ASSET
-  # =========================================================================
-  primary_care_medicines:
-    description: "Primary care medicine prescriptions"
-    default_source: "wlgp_medicines"
-
-    sources:
-      wlgp_medicines:
-        table_name: "WLGP_MEDICATION_CLEANSED"
-        description: "Welsh Longitudinal GP prescriptions"
-        priority: 1
-        data_quality: "high"
-        coverage: "95%"
-        primary_key: "ALF_PE"
-        columns:
-          patient_id:
-            db_column: "ALF_PE"
-            data_type: "BIGINT"
-          event_date:
-            db_column: "EVENT_DT"
-            data_type: "DATE"
-            description: "Prescription date"
-          code:
-            db_column: "BNF_CD"
-            data_type: "VARCHAR(20)"
-            description: "BNF code"
-          terminology:
-            db_column: "BNF_VERSION"
-            data_type: "VARCHAR(10)"
-            description: "BNF version"
-          drug_name:
-            db_column: "DRUG_NAME"
-            data_type: "VARCHAR(200)"
-          quantity:
-            db_column: "QTY"
-            data_type: "INTEGER"
-
-  # =========================================================================
-  # DEATHS DATA ASSET
-  # =========================================================================
-  deaths:
-    description: "Death registrations with causes"
-    default_source: "adde"
-
-    sources:
-      adde:
-        table_name: "ADDE_DEATHS"
-        description: "Annual District Death Extract"
-        priority: 1
-        data_quality: "high"
-        coverage: "100%"
-        primary_key: "ALF_PE"
-        columns:
-          patient_id:
-            db_column: "ALF_PE"
-            data_type: "BIGINT"
-          event_date:
-            db_column: "DOD"
-            data_type: "DATE"
-            description: "Date of death"
-          code:
-            db_column: "UNDERLYING_CAUSE_CD"
-            data_type: "VARCHAR(20)"
-            description: "Underlying cause of death"
-          terminology:
-            db_column: "CAUSE_CD_VERSION"
-            data_type: "VARCHAR(10)"
-            description: "ICD10"
-          location:
-            db_column: "PLACE_OF_DEATH"
-            data_type: "VARCHAR(100)"
 
 # ============================================================================
 # Metadata

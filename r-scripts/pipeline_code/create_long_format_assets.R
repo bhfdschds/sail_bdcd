@@ -15,7 +15,7 @@ library(tidyr)
 # from utility_code/db2_connection.R
 # ============================================================================
 
-read_db_config <- function(config_path = "db2_config_multi_source.yaml") {
+read_db_config <- function(config_path = "scripts/pipeline_code/db2_config_multi_source.yaml") {
   config <- yaml::read_yaml(config_path)
   return(config)
 }
@@ -508,7 +508,7 @@ pivot_to_wide_by_source <- function(long_table, value_columns) {
 example_sex_table <- function() {
   # Example: Create long format sex table from all sources
   
-  config <- read_db_config("db2_config_multi_source.yaml")
+  config <- read_db_config("scripts/pipeline_code/db2_config_multi_source.yaml")
   conn <- create_db2_connection(config)
   
   # Create long format sex table
@@ -536,7 +536,7 @@ example_sex_table <- function() {
 example_create_all_assets <- function() {
   # Example: Create long format tables for all assets
   
-  config <- read_db_config("db2_config_multi_source.yaml")
+  config <- read_db_config("scripts/pipeline_code/db2_config_multi_source.yaml")
   conn <- create_db2_connection(config)
   
   # Create all asset tables
@@ -603,7 +603,7 @@ example_sex_analysis <- function() {
 # 9. Main Pipeline Function
 # ============================================================================
 
-create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
+create_asset_pipeline <- function(config_path = "scripts/pipeline_code/db2_config_multi_source.yaml",
                                   patient_ids = NULL,
                                   assets = c("date_of_birth", "sex",
                                              "ethnicity", "lsoa"),
@@ -699,4 +699,4 @@ create_asset_pipeline <- function(config_path = "db2_config_multi_source.yaml",
 # example_sex_analysis()
 
 # Or run complete pipeline:
-# results <- create_asset_pipeline(patient_ids = c(1001:2000))
+results <- create_asset_pipeline(patient_ids = c(1001:2000))
