@@ -6,7 +6,7 @@ library(purrr)
 
 # Source the database connection function
 # NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
-source("./utility_code/db2_connection.R")
+source("scripts/utility_code/db2_connection.R")
 
 # Connect using the standardized connection function
 con <- create_db2_connection()

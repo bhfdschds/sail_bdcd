@@ -5,6 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              IBM DB2 DATABASE                                │
+│                               SAIL SCHEMA (SOURCE DATA)                      │
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐          │
 │  │ PATIENT_ALF_     │  │ PEDW_EPISODE     │  │ WLGP_GP_EVENT_   │          │
@@ -19,15 +20,16 @@
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ STEP 1: Extract & Curate
+                                      │ create_long_format_asset()
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         LONG FORMAT ASSETS                                   │
-│                     (create_long_format_asset)                               │
+│                    (DB2INST1 Schema - Workspace)                             │
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │ DEMOGRAPHICS ASSETS (4 tables)                                     │     │
+│  │ DEMOGRAPHICS ASSETS (4 database tables)                            │     │
 │  │                                                                     │     │
-│  │  date_of_birth_long_format.rds                                     │     │
+│  │  DB2INST1.DATE_OF_BIRTH_LONG_FORMAT                                │     │
 │  │  ┌─────────────┬──────────────┬─────────────┬──────────────┐      │     │
 │  │  │ patient_id  │ source_table │ source_prio │ date_of_birth│      │     │
 │  │  ├─────────────┼──────────────┼─────────────┼──────────────┤      │     │
@@ -35,14 +37,15 @@
 │  │  │    1002     │   gp_dob     │      1      │  1965-08-22  │      │     │
 │  │  └─────────────┴──────────────┴─────────────┴──────────────┘      │     │
 │  │                                                                     │     │
-│  │  sex_long_format.rds, ethnicity_long_format.rds,                  │     │
-│  │  lsoa_long_format.rds (similar structure)                         │     │
+│  │  DB2INST1.SEX_LONG_FORMAT                                          │     │
+│  │  DB2INST1.ETHNICITY_LONG_FORMAT                                    │     │
+│  │  DB2INST1.LSOA_LONG_FORMAT (similar structure)                     │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │ DISEASE & TREATMENT ASSETS (4 tables)                              │     │
+│  │ DISEASE & TREATMENT ASSETS (4 database tables)                     │     │
 │  │                                                                     │     │
-│  │  hospital_admissions_long_format.rds                               │     │
+│  │  DB2INST1.HOSPITAL_ADMISSIONS_LONG_FORMAT                          │     │
 │  │  ┌─────────────┬──────────────┬──────────┬──────────┬────────┐    │     │
 │  │  │ patient_id  │ source_table │ event_dt │   code   │ termin │    │     │
 │  │  ├─────────────┼──────────────┼──────────┼──────────┼────────┤    │     │
@@ -51,18 +54,21 @@
 │  │  │    1002     │     pedw     │2023-05-10│   I10    │ ICD10  │    │     │
 │  │  └─────────────┴──────────────┴──────────┴──────────┴────────┘    │     │
 │  │                                                                     │     │
-│  │  primary_care_long_format.rds, medicines_long_format.rds,         │     │
-│  │  deaths_long_format.rds (similar structure)                       │     │
+│  │  DB2INST1.PRIMARY_CARE_LONG_FORMAT                                 │     │
+│  │  DB2INST1.PRIMARY_CARE_MEDICINES_LONG_FORMAT                       │     │
+│  │  DB2INST1.DEATHS_LONG_FORMAT (similar structure)                   │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ get_highest_priority_per_patient()
                                       │ combine_demographics()
+                                      │ save_to_db()
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                     COMBINED DEMOGRAPHICS TABLE                              │
+│                        (DB2INST1 Schema)                                     │
 │                                                                              │
-│  demographics_combined.rds                                                   │
+│  DB2INST1.DEMOGRAPHICS_COMBINED                                              │
 │  ┌────────────┬──────────────┬──────────┬─────────────┬────────────┐        │
 │  │ patient_id │ date_of_birth│ sex_code │ethnicity_cd │  lsoa_code │        │
 │  ├────────────┼──────────────┼──────────┼─────────────┼────────────┤        │
@@ -74,15 +80,19 @@
 │                                                                              │
 │  Rows: 10,000 patients                                                       │
 │  Columns: 5 (patient_id + 4 demographics)                                    │
+│                                                                              │
+│  Access: read_from_db(conn, "DEMOGRAPHICS_COMBINED")                         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ STEP 2: Generate Cohort
                                       │ generate_cohort()
+                                      │ save_to_db()
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          STUDY COHORT                                        │
+│                        (DB2INST1 Schema)                                     │
 │                                                                              │
-│  study_cohort.rds                                                            │
+│  DB2INST1.STUDY_COHORT                                                       │
 │  ┌────────┬────────────┬──────────────┬──────────┬────────┬─────────┐       │
 │  │patient │ index_date │ age_at_index │ sex_code │ethnic  │  lsoa   │       │
 │  ├────────┼────────────┼──────────────┼──────────┼────────┼─────────┤       │
@@ -98,30 +108,40 @@
 │                                                                              │
 │  Rows: 9,598 patients (402 excluded)                                         │
 │  Columns: 6                                                                  │
+│                                                                              │
+│  Access: read_from_db(conn, "STUDY_COHORT")                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                   ┌───────────────────┼───────────────────┐
                   │                   │                   │
           STEP 3: Covariates   STEP 4: Outcomes         │
           (lookback)           (follow-up)               │
+          save_to_db()         save_to_db()              │
                   │                   │                   │
                   ▼                   ▼                   ▼
 ┌──────────────────────────┐ ┌──────────────────────┐
 │   COVARIATES TABLE       │ │   OUTCOMES TABLE     │
+│  (DB2INST1 Schema)       │ │  (DB2INST1 Schema)   │
 │                          │ │                      │
-│ cohort_with_covariates   │ │ cohort_with_outcomes │
-│        .rds              │ │        .rds          │
+│ DB2INST1.COHORT_WITH_    │ │ DB2INST1.COHORT_WITH_│
+│ COVARIATES               │ │ OUTCOMES             │
+│                          │ │                      │
+│ Access: read_from_db(    │ │ Access: read_from_db(│
+│  conn, "COHORT_WITH_     │ │  conn, "COHORT_WITH_ │
+│  COVARIATES")            │ │  OUTCOMES")          │
 └──────────────────────────┘ └──────────────────────┘
          │                              │
          │                              │
          └──────────────┬───────────────┘
                         │
                         │ STEP 5: Combine
+                        │ save_to_db()
                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      FINAL ANALYSIS DATASET                                  │
+│                        (DB2INST1 Schema)                                     │
 │                                                                              │
-│  final_analysis_dataset.rds                                                  │
+│  DB2INST1.FINAL_ANALYSIS_DATASET                                             │
 │  ┌────────┬────────────┬─────┬──────────┬───────────┬──────────┬─────────┐  │
 │  │patient │ index_date │ age │ diabetes │ diabetes  │heart_atk │heart_atk│  │
 │  │  _id   │            │     │  _flag   │  _date    │  _flag   │  _date  │  │
@@ -137,6 +157,7 @@
 │  Rows: 9,598 patients                                                        │
 │  Columns: 25+ (demographics + covariates + outcomes)                         │
 │                                                                              │
+│  Access: read_from_db(conn, "FINAL_ANALYSIS_DATASET")                        │
 │  READY FOR STATISTICAL ANALYSIS                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -165,12 +186,12 @@
 6. **Combine sources** into single long format table (one row per source per patient)
 7. **Standardize** column names to match YAML specification
 
-**Output:** Long format data frame
+**Output:** Long format data frame (saved to database via `save_to_db()`)
 
 **Example Transformation:**
 
 ```
-DATABASE TABLE: PATIENT_ALF_CLEANSED
+DATABASE TABLE: SAIL.PATIENT_ALF_CLEANSED (Source)
 ┌──────────┬──────────────┬──────────┐
 │  ALF_PE  │     WOB      │CREATE_DT │
 ├──────────┼──────────────┼──────────┤
@@ -179,8 +200,9 @@ DATABASE TABLE: PATIENT_ALF_CLEANSED
 └──────────┴──────────────┴──────────┘
 
                  ↓ create_long_format_asset()
+                 ↓ save_to_db(conn, data, "DATE_OF_BIRTH_LONG_FORMAT")
 
-LONG FORMAT: date_of_birth_long_format.rds
+LONG FORMAT: DB2INST1.DATE_OF_BIRTH_LONG_FORMAT (Workspace)
 ┌────────────┬──────────────┬──────────────┬─────────────┬──────────────┐
 │ patient_id │ source_table │source_priority│date_of_birth│ record_date  │
 ├────────────┼──────────────┼──────────────┼─────────────┼──────────────┤
@@ -750,4 +772,182 @@ Each step includes built-in validation:
 
 ---
 
-This pipeline transforms raw database tables into analysis-ready datasets while preserving data quality, transparency, and auditability at every step.
+## Database Storage Implementation
+
+### Schema Organization
+
+The pipeline uses two distinct database schemas:
+
+#### SAIL Schema (Source Data - Read-Only)
+- Contains all original/source health data tables
+- **Read-only access** for analysis users
+- Tables include:
+  - `PATIENT_ALF_CLEANSED` (demographics)
+  - `PEDW_EPISODE` (hospital admissions)
+  - `WLGP_GP_EVENT_CLEANSED` (primary care events)
+  - `WLGP_MEDICATION_CLEANSED` (prescriptions)
+  - `ADDE_DEATHS` (death records)
+
+#### DB2INST1 Schema (Workspace - Read-Write)
+- User workspace for analysis and intermediate tables
+- **Full read-write access** for users
+- All pipeline outputs stored here
+- Users can create, modify, and delete tables
+
+### Database vs File Storage
+
+**Previous Implementation (Files)**:
+```r
+# Save to file
+saveRDS(demographics, "/mnt/user-data/outputs/demographics_combined.rds")
+
+# Read from file
+demographics <- readRDS("/mnt/user-data/outputs/demographics_combined.rds")
+```
+
+**Current Implementation (Database)**:
+```r
+# Save to database
+save_to_db(conn, demographics, "DEMOGRAPHICS_COMBINED")
+
+# Read from database
+demographics <- read_from_db(conn, "DEMOGRAPHICS_COMBINED")
+```
+
+### Benefits of Database Storage
+
+1. **No File System Dependencies**
+   - Eliminates file permission issues
+   - No file path management required
+   - Works consistently across all environments
+
+2. **Better Data Governance**
+   - Centralized storage with access controls
+   - Audit trail via database logs
+   - Version control capabilities
+
+3. **Improved Performance**
+   - Direct database access (no file I/O overhead)
+   - Efficient data compression
+   - Faster queries on large datasets
+
+4. **Concurrent Access**
+   - Multiple users can access same data safely
+   - No file locking issues
+   - Better collaboration support
+
+5. **Database Features**
+   - SQL queries directly on intermediate tables
+   - Join tables without loading into R
+   - Database indexing for performance
+
+### Utility Functions
+
+Located in: `r-scripts/utility_code/db_table_utils.R`
+
+#### Save Data to Database
+```r
+save_to_db(conn, data, table_name, schema = "DB2INST1", overwrite = TRUE)
+```
+
+#### Read Data from Database
+```r
+data <- read_from_db(conn, table_name, schema = "DB2INST1")
+```
+
+#### Check Table Existence
+```r
+exists <- db_table_exists(conn, table_name, schema = "DB2INST1")
+```
+
+#### List Workspace Tables
+```r
+tables <- list_workspace_tables(conn, schema = "DB2INST1")
+```
+
+### Example Workflow with Database Storage
+
+```r
+library(DBI)
+source("scripts/utility_code/db2_connection.R")
+source("scripts/utility_code/db_table_utils.R")
+source("scripts/examples_code/complete_pipeline_example.R")
+
+# Connect to database
+conn <- create_db2_connection()
+
+# Run complete pipeline (all tables saved to database)
+results <- run_complete_pipeline(
+  config_path = "scripts/pipeline_code/db2_config_multi_source.yaml",
+  index_date = as.Date("2024-01-01"),
+  min_age = 18,
+  max_age = 100,
+  follow_up_days = 365
+)
+
+# Later: Retrieve data for analysis
+final_data <- read_from_db(conn, "FINAL_ANALYSIS_DATASET")
+
+# Perform analysis
+library(dplyr)
+summary_stats <- final_data %>%
+  group_by(sex_code) %>%
+  summarise(
+    n = n(),
+    mean_age = mean(age_at_index),
+    heart_attack_rate = mean(heart_attack_outcome_flag)
+  )
+
+# Query database directly with SQL
+elderly_patients <- DBI::dbGetQuery(
+  conn,
+  "SELECT * FROM DB2INST1.FINAL_ANALYSIS_DATASET WHERE age_at_index >= 65"
+)
+
+# Clean up
+DBI::dbDisconnect(conn)
+```
+
+### Backward Compatibility
+
+All functions support both database and file-based storage:
+
+```r
+# Database storage (default, recommended)
+example_generate_cohort(conn, use_database = TRUE)
+
+# File-based storage (legacy)
+example_generate_cohort(conn = NULL, use_database = FALSE)
+
+# Asset pipeline with database
+create_asset_pipeline(format = "database")  # Default
+
+# Asset pipeline with CSV files
+create_asset_pipeline(format = "csv")       # Legacy
+```
+
+### Database Table Names
+
+All workspace tables follow uppercase naming conventions:
+
+| Data Type | Database Table Name |
+|-----------|-------------------|
+| Date of Birth (long format) | `DB2INST1.DATE_OF_BIRTH_LONG_FORMAT` |
+| Sex (long format) | `DB2INST1.SEX_LONG_FORMAT` |
+| Ethnicity (long format) | `DB2INST1.ETHNICITY_LONG_FORMAT` |
+| LSOA (long format) | `DB2INST1.LSOA_LONG_FORMAT` |
+| Combined demographics | `DB2INST1.DEMOGRAPHICS_COMBINED` |
+| Hospital admissions | `DB2INST1.HOSPITAL_ADMISSIONS_LONG_FORMAT` |
+| Primary care | `DB2INST1.PRIMARY_CARE_LONG_FORMAT` |
+| Medicines | `DB2INST1.PRIMARY_CARE_MEDICINES_LONG_FORMAT` |
+| Deaths | `DB2INST1.DEATHS_LONG_FORMAT` |
+| Study cohort | `DB2INST1.STUDY_COHORT` |
+| Cohort with covariates | `DB2INST1.COHORT_WITH_COVARIATES` |
+| Cohort with outcomes | `DB2INST1.COHORT_WITH_OUTCOMES` |
+| Final analysis dataset | `DB2INST1.FINAL_ANALYSIS_DATASET` |
+
+For more details, see the comprehensive [Database Storage Guide](../r-scripts/docs/DATABASE_STORAGE.md).
+
+---
+
+This pipeline transforms raw database tables into analysis-ready datasets while preserving data quality, transparency, and auditability at every step. With database storage, all intermediate results are persistently stored and easily accessible for collaborative analysis.

@@ -38,6 +38,51 @@ save_to_db <- function(conn, data, table_name,
   table_name <- toupper(table_name)
   schema <- toupper(schema)
 
+  # Validate and fix column names for DB2 compatibility
+  col_names <- names(data)
+  invalid_cols <- which(nchar(col_names) > 30)
+
+  if (length(invalid_cols) > 0) {
+    warning(sprintf(
+      "Column names exceed DB2 limit of 30 characters. Truncating %d columns.",
+      length(invalid_cols)
+    ))
+
+    # Show which columns are being truncated
+    for (i in invalid_cols) {
+      old_name <- col_names[i]
+      new_name <- substr(old_name, 1, 30)
+      message(sprintf("  Truncating: '%s' -> '%s'", old_name, new_name))
+      names(data)[i] <- new_name
+    }
+  }
+
+  # Convert column names to uppercase for DB2
+  names(data) <- toupper(names(data))
+
+  # Handle data type conversions for DB2 compatibility
+  for (col_name in names(data)) {
+    col_class <- class(data[[col_name]])[1]
+
+    # Convert integer64 to numeric (DB2/ODBC doesn't handle integer64 well)
+    if (col_class == "integer64") {
+      message(sprintf("  Converting integer64 column '%s' to numeric", col_name))
+      data[[col_name]] <- as.numeric(data[[col_name]])
+    }
+
+    # Convert logical to integer (DB2 doesn't have a BOOLEAN type)
+    if (col_class == "logical") {
+      message(sprintf("  Converting logical column '%s' to integer (0/1)", col_name))
+      data[[col_name]] <- as.integer(data[[col_name]])
+    }
+
+    # Handle Date columns - convert ALL to character to avoid DB2/ODBC issues
+    if (inherits(data[[col_name]], "Date")) {
+      message(sprintf("  Converting Date column '%s' to character for DB2 compatibility", col_name))
+      data[[col_name]] <- as.character(data[[col_name]])
+    }
+  }
+
   # Create fully qualified table identifier
   table_id <- DBI::Id(schema = schema, table = table_name)
 
@@ -65,8 +110,28 @@ save_to_db <- function(conn, data, table_name,
     invisible(TRUE)
 
   }, error = function(e) {
+    # Capture full error details
+    error_msg <- e$message
+
+    # Try to get more details from the error object
+    if (!is.null(e$parent)) {
+      error_msg <- paste(error_msg, "\nParent error:", e$parent$message)
+    }
+
+    # Print data frame info for debugging
+    cat("\n=== Debug Info ===\n")
+    cat(sprintf("Table: %s.%s\n", schema, table_name))
+    cat(sprintf("Rows: %d, Columns: %d\n", nrow(data), ncol(data)))
+    cat("Column names:\n")
+    print(names(data))
+    cat("\nColumn types:\n")
+    print(sapply(data, class))
+    cat("\nFirst few rows:\n")
+    print(head(data, 3))
+    cat("==================\n\n")
+
     stop(sprintf("Failed to save table %s.%s: %s",
-                 schema, table_name, e$message), call. = FALSE)
+                 schema, table_name, error_msg), call. = FALSE)
   })
 }
 

@@ -6,13 +6,52 @@ library(purrr)
 
 # Source the database connection function
 # NOTE: Run this script with working directory set to r-scripts root: setwd("~/scripts")
-source("./utility_code/db2_connection.R")
+source("scripts/utility_code/db2_connection.R")
 
 # Connect using the standardized connection function
 con <- create_db2_connection()
 
 # Create schema sail if not exists
-dbExecute(con, "CREATE SCHEMA sail")
+# ============================================
+# PART 1: CREATE SCHEMA AND TABLES
+# ============================================
+
+# Create schema sail if not exists
+tryCatch({
+  dbExecute(con, "CREATE SCHEMA sail")
+}, error = function(e) {
+  message("Schema sail may already exist: ", e$message)
+})
+
+# Set current schema to sail
+dbExecute(con, "SET SCHEMA sail")
+
+# Drop tables if they exist (for clean slate)
+tables_to_drop <- c(
+  "GP_EVENT_REFORMATTED",
+  "GP_EVENT_CODES",
+  "GP_EVENT_CLEANSED",
+  "PATIENT_ALF_CLEANSED",
+  "WLGP_CLEANED_GP_REG_BY_PRACINCLUNONSAIL_MEDIAN",
+  "WLGP_CLEANED_GP_REG_MEDIAN",
+  "PEDEW_DIAG",
+  "PEDEW_SPELL",
+  "PEDEW_EPISODE",
+  "PEDEW_OPER",
+  # "PEDEW_SUPERSPELL",
+  # "PEDEW_SINGLE_DIAG_TABLE",
+  # "PEDEW_SINGLE_OPER_TABLE",
+  # "PEDEW_PERSON_SPELL"
+)
+
+for (table in tables_to_drop) {
+  tryCatch({
+    dbExecute(con, paste0("DROP TABLE sail.", table))
+    message(paste("Dropped table:", table))
+  }, error = function(e) {
+    message(paste("Could not drop table", table, ":", e$message))
+  })
+}
 
 # Set current schema to sail
 dbExecute(con, "SET SCHEMA sail")
@@ -49,6 +88,7 @@ CREATE TABLE sail.GP_EVENT_CODES (
 
 dbExecute(conn, "
 CREATE TABLE sail.GP_EVENT_CLEANSED (
+    ALF_E BIGINT NOT NULL,
     PRAC_CD_PE INTEGER NOT NULL,
     LOCAL_NUM_PE BIGINT NOT NULL,
     EVENT_CD_VRS CHAR(10) NOT NULL,
